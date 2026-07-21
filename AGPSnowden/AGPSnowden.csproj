@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.15.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.12" />
+    <PackageReference Include="QuestPDF" Version="2023.5.2" />
+    <PackageReference Include="Serilog" Version="2.12.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Reports\Results\RD\" />
+    <Folder Include="Reports\Templates\RD\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AGP.Gordon.CommonLayer\AGP.Gordon.CommonLayer.csproj" />
+    <ProjectReference Include="..\AGP.Gordon.DataLayer\AGP.Gordon.DataAccessLayer.csproj" />
+    <ProjectReference Include="..\AGP.Gordon.LogicLayer\AGP.Gordon.ServiceLayer.csproj" />
+    <ProjectReference Include="..\AGP.Security.DataAccessLayer\AGP.Security.DataAccessLayer.csproj" />
+    <ProjectReference Include="..\AGP.Security.ServiceLayer\AGP.Security.ServiceLayer.csproj" />
+    <ProjectReference Include="..\AGP.Snowden.DataAccessLayer\AGP.Snowden.DataAccessLayer.csproj" />
+    <ProjectReference Include="..\AGP.Snowden.ServiceLayer\AGP.Snowden.ServiceLayer.csproj" />
+  </ItemGroup>
+
+</Project>

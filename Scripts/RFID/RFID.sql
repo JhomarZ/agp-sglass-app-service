@@ -1,0 +1,134 @@
+/****** SCRIPT MIGRACIÓN DE FUNCIONALIDAD RFID TAG MASIVO *****/
+
+-- 1. talbla: [dbo].[FLAG_PROCESS]
+CREATE table [dbo].[FLAG_PROCESS](
+	TAGS_MASSIVE_PROCESSING	bit,
+	TAGS_MASIVO_ID	bigint
+)
+
+insert into [dbo].[FLAG_PROCESS] (TAGS_MASSIVE_PROCESSING,TAGS_MASIVO_ID) values(0,null);
+
+-- 2. talbla: [dbo].[TAGS_MASIVO]
+CREATE table [dbo].TAGS_MASIVO](
+	ID	bigint indentity,
+	TAGS	varchar(max),
+	ESTADO	char(2),
+	FECHA	datetime
+)
+
+
+-- 3. Store Procedure: [dbo].[SP_INSERTAR_TAG_MASIVO]
+
+	CREATE PROCEDURE [dbo].[SP_INSERTAR_TAG_MASIVO]
+	@TAGS VARCHAR(MAX)
+	--@NUM_IP VARCHAR (39),
+	--@CANAL INT
+	AS
+		BEGIN	
+
+		Declare @PuestoTrabajo Varchar(15), @ClaveModelo Varchar(15)
+	
+		If ((Select Count (*) From TAGS_MASIVO Where TAGS=@TAGS)=0)
+			Begin 
+				INSERT INTO TAGS_MASIVO(TAGS,ESTADO,FECHA) VALUES(@TAGS,'PE',GETDATE());
+			End
+	
+		if((SELECT count(*) FROM FLAG_PROCESS WHERE TAGS_MASSIVE_PROCESSING = 0)=1 ) /*and (select COUNT(*) from TAGS_MASIVO)<50*/
+		Begin 
+			exec [dbo].[SP_PROCESAR_TAG_MASIVOS]
+		End
+	END
+
+
+
+-- 4. Store Procedure: [dbo].[SP_PROCESAR_TAG_MASIVOS]
+
+	CREATE PROCEDURE [dbo].[SP_PROCESAR_TAG_MASIVOS]
+		AS
+		BEGIN	
+			DECLARE @TAGS_MASSIVO Varchar(MAX), @TAG_CACATENADO Varchar(100), @TAG varchar(50), @CANAL Varchar(30), @NUM_IP Varchar(50);
+			DECLARE @ID bigint;
+			DECLARE @TAGS_CURSOR CURSOR
+
+			--Creamos tabla temporal donde almacenaremos los tags masivos pendientes y pode cerrar un ciclo
+			SELECT ID,TAGS,ESTADO,FECHA INTO #TMP_TAGS_MASIVO FROM TAGS_MASIVO WHERE  ESTADO = 'PE'
+	
+
+
+			WHILE EXISTS (SELECT 1 FROM #TMP_TAGS_MASIVO WHERE ESTADO = 'PE')
+			BEGIN
+		
+		
+				SET @ID = (SELECT TOP 1 ID FROM #TMP_TAGS_MASIVO WHERE ESTADO = 'PE' ORDER BY Id ASC);
+				UPDATE TAGS_MASIVO SET ESTADO = 'PR' WHERE ID = @ID;
+				UPDATE #TMP_TAGS_MASIVO SET ESTADO = 'PR' WHERE ID = @ID;
+
+				--ACTUALIZAMOS EL FLAG PARA INDICAR QUE SE ESTA EJECUTANDO EL BUCLE DE PROCESAMIENTO
+				UPDATE FLAG_PROCESS SET TAGS_MASSIVE_PROCESSING=1,TAGS_MASIVO_ID=@ID;
+
+				SET @TAGS_MASSIVO = (SELECT TOP 1 TAGS FROM #TMP_TAGS_MASIVO WHERE ID = @ID);
+
+				SET @TAGS_CURSOR = CURSOR FOR SELECT ITEM as TAG FROM dbo.SplitString(@TAGS_MASSIVO, ',');
+
+				OPEN @TAGS_CURSOR
+				FETCH NEXT FROM @TAGS_CURSOR INTO @TAG_CACATENADO
+				WHILE @@FETCH_STATUS = 0
+				BEGIN
+					IF LEN(@TAG_CACATENADO) > 38
+					BEGIN
+						SET @TAG = LEFT(@TAG_CACATENADO, CHARINDEX('-', @TAG_CACATENADO, 0) - 1);
+						SET @TAG_CACATENADO = REPLACE(@TAG_CACATENADO, @TAG + '-', '');
+						SET @NUM_IP = LEFT(@TAG_CACATENADO, CHARINDEX('-', @TAG_CACATENADO, 0) - 1);
+						SET @TAG_CACATENADO = REPLACE(@TAG_CACATENADO, @NUM_IP + '-', '');
+						SET @CANAL = @TAG_CACATENADO;
+						EXEC [dbo].[SP_INSERTAR_TAG] @TAG, @NUM_IP, @CANAL;
+					END
+
+					FETCH NEXT FROM @TAGS_CURSOR INTO @TAG_CACATENADO
+				END
+
+				CLOSE @TAGS_CURSOR
+				DEALLOCATE @TAGS_CURSOR
+				UPDATE TAGS_MASIVO SET ESTADO = 'TE' WHERE ID = @ID;
+				DELETE FROM TAGS_MASIVO WHERE ESTADO = 'TE';
+				DELETE FROM #TMP_TAGS_MASIVO WHERE ID = @ID;
+				--ACTUALIZAMOS EL FLAG PARA INDICAR QUE SE TERMINO DE EJECUTAR EL BUCLE DE PROCESAMIENTO MASIVO
+				UPDATE FLAG_PROCESS SET TAGS_MASSIVE_PROCESSING=0;
+			END
+			UPDATE TAGS_MASIVO SET ESTADO = 'PE'
+
+		END
+		
+
+-- 5. FUNCTION : [dbo].[SplitString]
+
+ALTER FUNCTION [dbo].[SplitString]
+(    
+    @Input NVARCHAR(MAX),
+    @Character CHAR(1)
+)
+RETURNS @Output TABLE (
+    Item NVARCHAR(1000)
+)
+AS
+BEGIN
+    DECLARE @StartIndex INT, @EndIndex INT
+ 
+    SET @StartIndex = 1
+    IF SUBSTRING(@Input, LEN(@Input) - 1, LEN(@Input)) <> @Character
+    BEGIN
+        SET @Input = @Input + @Character
+    END
+ 
+    WHILE CHARINDEX(@Character, @Input) > 0
+    BEGIN
+        SET @EndIndex = CHARINDEX(@Character, @Input)
+         
+        INSERT INTO @Output(Item)
+        SELECT SUBSTRING(@Input, @StartIndex, @EndIndex - 1)
+         
+        SET @Input = SUBSTRING(@Input, @EndIndex + 1, LEN(@Input))
+    END
+ 
+    RETURN
+END

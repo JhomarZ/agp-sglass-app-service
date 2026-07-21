@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="QuestPDF" Version="2023.5.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AGP.Gordon.DataLayer\AGP.Gordon.DataAccessLayer.csproj" />
+    <ProjectReference Include="..\AGP.Gordon.LogicLayer\AGP.Gordon.ServiceLayer.csproj" />
+  </ItemGroup>
+
+</Project>
