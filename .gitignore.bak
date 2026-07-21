@@ -415,3 +415,5 @@ FodyWeavers.xsd
 *.msp
 *.appsettings.Development.json
 *.appsettings.json
+appsettings.Development.json
+appsettings.json
