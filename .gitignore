@@ -415,5 +415,6 @@ FodyWeavers.xsd
 *.msp
 AGPSnowden/appsettings.json
 AGPSnowden/appsettings.Development.json
+AGPGordonApi/appsettings.json
 **/appsettings.json
 **/appsettings.Development.json

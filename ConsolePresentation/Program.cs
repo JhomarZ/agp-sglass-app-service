@@ -74,18 +74,18 @@ Byte[] BYTE_IMAGEN_PLANO_STANDAR = await ConvertImageUrlToByte(IMAGEN_PLANO_STAN
 #region SEC-3 DATOS: DIMENSIONAL RESULT
 List<CertificadoIfdimension> DIMENSIONAL_RESULT = new List<CertificadoIfdimension>();
 
-DIMENSIONAL_RESULT = _CertificadoIFService.GetMedicionesDimensionales(CertificadoId);
+DIMENSIONAL_RESULT = await _CertificadoIFService.GetMedicionesDimensionales(CertificadoId);
 #endregion
 
 #region SEC-4 DATOS: APARIENCIA RESULT
 List<CertificadoIfapariencias> APARIENCIA_RESULT = new List<CertificadoIfapariencias>();
 
-APARIENCIA_RESULT = _CertificadoIFService.GetDatosApariencia(CertificadoId);
+APARIENCIA_RESULT = await _CertificadoIFService.GetDatosApariencia(CertificadoId);
 #endregion
 
 #region SEC-5 OPTICAL INSPECTION
 List<InspeccionOptica> INSPECCIONES_OPTICAS = new List<InspeccionOptica>();
-    INSPECCIONES_OPTICAS = _CertificadoIFService.GetInspeccionesOpticas(CertificadoId);
+    INSPECCIONES_OPTICAS = await _CertificadoIFService.GetInspeccionesOpticas(CertificadoId);
 
     foreach (InspeccionOptica ins in INSPECCIONES_OPTICAS)
     {
