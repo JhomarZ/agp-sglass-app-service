@@ -148,7 +148,7 @@ namespace AGPSnowden.Controllers.TestPDF
                 // Enviar el archivo al cliente
                 //return File(fileBytes, "application/pdf", "archivo.pdf");
                 if(Idioma=="I")
-                    pdfname = await _CertificadoIfService.CertificadoPDFSglassIngles(Idioma,certificado, PIEZA,DIMENSIONAL_RESULT,APARIENCIA_RESULT,INSPECCIONES_OPTICAS, DEFECTOS);
+                    pdfname = await _CertificadoIfService.CertificadoPDFIngles(Idioma,certificado, PIEZA,DIMENSIONAL_RESULT,APARIENCIA_RESULT,INSPECCIONES_OPTICAS, DEFECTOS);
                 else
                     pdfname = await _CertificadoIfService.CertificadoPDFSglassEspanol(Idioma, certificado, PIEZA, DIMENSIONAL_RESULT, APARIENCIA_RESULT, INSPECCIONES_OPTICAS, DEFECTOS);
 
@@ -388,7 +388,7 @@ namespace AGPSnowden.Controllers.TestPDF
 
                             // Generar PDF
                             string pdfPath = request.Idioma == "I"
-                                ? await _CertificadoIfService.CertificadoPDFSglassIngles(request.Idioma, certificado, PIEZA, DIMENSIONAL_RESULT, APARIENCIA_RESULT, INSPECCIONES_OPTICAS, DEFECTOS)
+                                ? await _CertificadoIfService.CertificadoPDFIngles(request.Idioma, certificado, PIEZA, DIMENSIONAL_RESULT, APARIENCIA_RESULT, INSPECCIONES_OPTICAS, DEFECTOS)
                                 : await _CertificadoIfService.CertificadoPDFSglassEspanol(request.Idioma, certificado, PIEZA, DIMENSIONAL_RESULT, APARIENCIA_RESULT, INSPECCIONES_OPTICAS, DEFECTOS);
 
                             // Copiar PDF al directorio temporal

@@ -29,6 +29,19 @@ namespace AGP.Gordon.ServiceLayer
 {
     public class CertificadoIFService
     {
+        // Clave: Zfer del cliente especial. Valor: rutas fijas en el proyecto.  (certificados sentinel)
+        private static readonly Dictionary<string, (string Silueta, string Zonas)> _mapa =
+            new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase)
+        {
+        { "700167180", ("src/sentinel/delantero_derecho_zonas.jpg", "src/sentinel/delantero_derecho_zonas.jpg") },
+        { "700167179", ("src/sentinel/delantera_izquierda_zonas.jpg", "src/sentinel/delantera_izquierda_zonas.jpg") },
+        { "700165337",   ("src/sentinel/trazera_derecha_zonas.jpg",   "src/sentinel/trazera_derecha_zonas.jpg") },
+        { "700165336",    ("src/sentinel/trazera_izquierda_zonas.jpg",    "src/sentinel/trazera_izquierda_zonas.jpg") },
+        { "700164766",    ("src/sentinel/parabrisas_zonas.jpg",    "src/sentinel/parabrisas_zonas.jpg") }
+        };
+
+  
+
         private readonly HelpImage _HelpImage;
         private readonly HelpExcel _HelpExcel;
         // GET: STable
@@ -37,6 +50,231 @@ namespace AGP.Gordon.ServiceLayer
             _HelpImage = new HelpImage();
             _HelpExcel = new HelpExcel();
         }
+
+        #region Funciones para Certificados Sentinel
+
+        private static readonly (string Label, int ParamId)[] FilasIzquierda = new[]
+        {
+            ("External black band",    533),
+            ("Internal black band 1",  639),
+            ("Internal black band 2",  671),
+            ("Thickness",              593),
+        };
+
+        private static readonly (string Label, int ParamId)[] FilasDerecha = new[]
+        {
+            ("Hot resistance, Ohms",   682),
+            ("Cold resistance, Ohms",  680), // ⚠ confirmar
+            ("Mdp Zone 1",             739),
+            ("Mdp Zone 2",             740),
+        };
+
+        private static readonly (string Label, int ParamId)[] FilasApariencia = new[]
+        {
+            ("Image Reflection",              0),   // TODO: ID pendiente
+            ("Package edge appareance",     635),
+            ("Silkscreen appareance",       461),
+            ("Thermographic imaging",         0),   // TODO
+            ("Distortion with Zebra at 45",   0),   // TODO
+            ("Distortion with Zebra at 0",    0),   // TODO
+            ("Distortion with Zebra",         0),   // TODO
+            ("double image",                  0),   // TODO
+            ("Appareance external face",      0),   // TODO
+            ("Black band design",             0),   // TODO
+            ("Appareance inner side",         0),   // TODO
+            ("Finishing and cleaning edges", 634),
+            ("Gradient",                     578),
+            ("Mass Defect",                  460),
+            ("Color",                        633),
+            ("Logo (art)",                   459),
+        };
+
+        // TODO: URGENTE/TEMPORAL — reemplazar por tabla maestra Parámetro+Valor+Tolerancia cuando esté disponible en el sistema principal.
+        private static readonly Dictionary<string, Dictionary<int, string[]>> TolerenciasPorZfer =
+            new Dictionary<string, Dictionary<int, string[]>>
+            {
+                ["700164766"] = new Dictionary<int, string[]> // Parabrisas
+                {
+                    [533] = new[] { "67±3", "33±3", "108±3", "33±3" },  //External black band
+                    [639] = new[] { "68", "36", "134", "36" },          //Internal black band 1
+                    [671] = new[] { "297+3", "41+3", "186+3", "51+3" }, //Internal black band 2
+                    [593] = new[] { "41±2", "41±2", "41±2", "41±2" },   //Thickness
+                    [682] = new[] { "0,67-1,24", "0,67-1,24" },         //Hot resistance, Ohms
+                    [680] = new[] { "0,67-1,24", "0,67-1,24" },         //Cold resistance, Ohms
+                    [739] = new[] { "<175", "<175" },                   //Mdp Zone 1
+                    [740] = new[] { "<175", "<175" },                   //Mdp Zone 2
+                },
+                ["700165336"] = new Dictionary<int, string[]> // PIEZA: TRAZERA IZQUIERDA
+                {
+                    [533] = new[] { "34±2", "34±2", "58±2", "37±2" },  //External black band
+                    [639] = new[] { "65±2", "59±2", "-", "51±2" },          //Internal black band 1
+                    [671] = new[] { "83±2", "67±2", "68±2", "50±2" }, //Internal black band 2
+                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
+                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
+                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
+                    [739] = new[] { "-", "-" },                   //Mdp Zone 1
+                    [740] = new[] { "-", "-" },                   //Mdp Zone 2
+                },
+                ["700165337"] = new Dictionary<int, string[]> // PIEZA: TRASERA DERECHA 
+                {
+                    [533] = new[] { "34±2", "34±2", "58±2", "37±2" },  //External black band
+                    [639] = new[] { "65±2", "59±2", "-", "51±2" },          //Internal black band 1
+                    [671] = new[] { "83±2", "67±2", "68±2", "50±2" }, //Internal black band 2
+                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
+                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
+                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
+                    [739] = new[] { "-", "-" },                   //Mdp Zone 1
+                    [740] = new[] { "-", "-" },                   //Mdp Zone 2
+                },
+                ["700167179"] = new Dictionary<int, string[]> // PIEZA: TRASERA DERECHA 
+                {
+                    [533] = new[] { "34±2", "37±2", "58±2", "34±2" },  //External black band
+                    [639] = new[] { "65±2", "51±2", "-", "59±2" },          //Internal black band 1
+                    [671] = new[] { "83±2", "50±2", "68±2", "67±2" }, //Internal black band 2
+                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
+                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
+                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
+                    [739] = new[] { "<89", "<275" },                   //Mdp Zone 1
+                    [740] = new[] { "<89", "<275" },                   //Mdp Zone 2
+                },
+                ["700167180"] = new Dictionary<int, string[]> // PIEZA: DELANTERO DERECHO  
+                {
+                    [533] = new[] { "34±2", "34±2", "58±2", "37±2" },  //External black band
+                    [639] = new[] { "65±2", "59±2", "-", "51±2" },          //Internal black band 1
+                    [671] = new[] { "83±2", "67±2", "68±2", "50±2" }, //Internal black band 2
+                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
+                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
+                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
+                    [739] = new[] { "<89", "<275" },                   //Mdp Zone 1
+                    [740] = new[] { "<89", "<275" },                   //Mdp Zone 2
+                },
+                // TODO: agregar 700167179, 700167180, 700165336, 700165337 cuando lleguen las tolerancias reales
+            };
+        public static bool TryGetImagenes(string zfer, out string rutaSilueta, out string rutaZonas)
+        {
+      
+            if (zfer != null && _mapa.TryGetValue(zfer.Trim(), out var val))
+            {
+                rutaSilueta = val.Silueta;
+                rutaZonas = val.Zonas;
+                return true;
+            }
+            rutaSilueta = null;
+            rutaZonas = null;
+            return false;
+        }
+
+        // Obtiene hasta N valores dinámicos (Val1..Val25) de un parámetro dimensional
+        private static string[] GetValoresDinamicos(CertificadoIfdimension? param, int numColumnas)
+        {
+            if (param == null)
+                return Enumerable.Repeat("", numColumnas).ToArray();
+
+            var todos = new[]
+            {
+                param.Val1, param.Val2, param.Val3, param.Val4, param.Val5,
+                param.Val6, param.Val7, param.Val8, param.Val9, param.Val10,
+                param.Val11, param.Val12, param.Val13, param.Val14, param.Val15,
+                param.Val16, param.Val17, param.Val18, param.Val19, param.Val20,
+                param.Val21, param.Val22, param.Val23, param.Val24, param.Val25
+             };
+
+            return todos.Take(numColumnas).Select(v => v ?? "").ToArray();
+        }
+
+        // Renderiza el par de filas: "Nom. & Tol." (gris, hardcode) + "Label" (blanco, valores reales)
+        private static void RenderFilaCaracteristica(
+            QuestPDF.Fluent.TableDescriptor table,
+            Func<QuestPDF.Infrastructure.IContainer, QuestPDF.Infrastructure.IContainer> cellStyleGris,
+            string label,
+            string[] tolHardcode,      // TODO: mover a config/BD más adelante
+            CertificadoIfdimension? paramData,
+            int numColumnas)
+        {
+            // Fila gris "Nom. & Tol." — hardcodeada por ahora
+            table.Cell().Element(cellStyleGris).Text("Nom. & Tol.").FontFamily(Fonts.Arial).FontSize(8).Bold();
+            for (int i = 0; i < numColumnas; i++)
+            {
+                string tol = i < tolHardcode.Length ? tolHardcode[i] : "";
+                table.Cell().Element(cellStyleGris).Text(tol).FontFamily(Fonts.Arial).FontSize(7).Bold();
+            }
+
+            // Fila blanca con el label + valores reales (dinámico por ParametroInspeccionId)
+            table.Cell().Element(cellStyleGris).Text(label).FontFamily(Fonts.Arial).FontSize(8).Bold();
+            var valores = GetValoresDinamicos(paramData, numColumnas);
+            foreach (var val in valores)
+            {
+                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).AlignCenter()
+                     .Text(val).FontFamily(Fonts.Arial).FontSize(7);
+            }
+        }
+
+        private static void RenderFilaCaracteristicaDinamica(
+            QuestPDF.Fluent.TableDescriptor table,
+            Func<QuestPDF.Infrastructure.IContainer, QuestPDF.Infrastructure.IContainer> cellStyle,
+            string label, int parametroId, string zfer,
+            List<CertificadoIfdimension> dimensionalResult, int numColumnas)
+        {
+            var paramData = dimensionalResult.FirstOrDefault(x => x.ParametroInspeccionId == parametroId);
+
+            string[] tolerancias = (TolerenciasPorZfer.TryGetValue(zfer ?? "", out var tolPorParam)
+                                     && tolPorParam.TryGetValue(parametroId, out var tolArray))
+                ? tolArray
+                : Enumerable.Repeat("-", numColumnas).ToArray();
+
+            table.Cell().Element(cellStyle).Text("Nom. & Tol.").FontFamily(Fonts.Arial).FontSize(8).Bold();
+            for (int i = 0; i < numColumnas; i++)
+                table.Cell().Element(cellStyle).Text(i < tolerancias.Length ? tolerancias[i] : "-")
+                    .FontFamily(Fonts.Arial).FontSize(7).Bold();
+
+            table.Cell().Element(cellStyle).Text(label).FontFamily(Fonts.Arial).FontSize(8).Bold();
+            string[] valores = paramData != null
+                ? GetValoresDinamicos(paramData, numColumnas)   // ya lo tienes definido
+                : Enumerable.Repeat("NA", numColumnas).ToArray();
+
+            foreach (var val in valores)
+                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).AlignCenter()
+                    .Text(val).FontFamily(Fonts.Arial).FontSize(7);
+        }
+        private static void RenderAparienciaCheckbox(QuestPDF.Fluent.TableDescriptor table, CertificadoIfapariencias? apariencia)
+        {
+            if (apariencia == null)
+            {
+                // El parámetro no aplica a este ZFER/pieza
+                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White)
+                    .AlignCenter().AlignMiddle()
+                    .Text("NA").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                return;
+            }
+
+            string valor = apariencia.Valor?.Trim() ?? "";
+
+            if (string.Equals(valor, "NA", StringComparison.OrdinalIgnoreCase))
+            {
+                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White)
+                    .AlignCenter().AlignMiddle()
+                    .Text("NA").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                return;
+            }
+
+            bool cumple = string.Equals(valor, "CUMPLE", StringComparison.OrdinalIgnoreCase);
+
+            var celda = table.Cell()
+                .Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White)
+                .AlignCenter().AlignMiddle().Padding(2);
+
+            if (cumple)
+            {
+                string rutaIcono = Path.Combine(AppContext.BaseDirectory, "src", "iconos", "check.png");
+                celda.MaxWidth(16).MaxHeight(16).Image(rutaIcono);
+            }
+            else
+            {
+                celda.Text(""); // NO CUMPLE explícito: casilla vacía, como ya definimos antes
+            }
+        }
+
+        #endregion
 
         public CertificadoIf GetById(long CertificadoId)
         {
@@ -256,8 +494,616 @@ namespace AGP.Gordon.ServiceLayer
             return observaciones;
         }
 
-        #region
-        public async Task<string> CertificadoPDFSglassIngles(string Idioma,CertificadoIf certificado,PiezaSap pieza, List<CertificadoIfdimension> DIMENSIONAL_RESULT, List<CertificadoIfapariencias> APARIENCIA_RESULT, List<InspeccionOptica> INSPECCIONES_OPTICAS, List<PiezaConcesion> OBSERVACIONES)
+        #region Certificados Sentinel
+        public async Task<string> CertificadoPDFSglassSentinel(string Idioma, CertificadoIf certificado, PiezaSap pieza, List<CertificadoIfdimension> DIMENSIONAL_RESULT, List<CertificadoIfapariencias> APARIENCIA_RESULT, List<InspeccionOptica> INSPECCIONES_OPTICAS, List<PiezaConcesion> OBSERVACIONES)
+        {
+            string UrlImageGordon = "http://4.228.184.32:8081/Userimage/";
+            string fileName = "Reports/Results/" + certificado.Id.ToString() + "/" + pieza.LoteLogistico + ".pdf";
+            try
+            {
+                #region SEC-1 CABECERA CERTIFICADO INFO
+                string CERTIFICATE_NUMBER = certificado.Id.ToString();
+                string SUPPLIER = pieza.GetSuplier();
+                string SUPPLIER_ADDRESS = pieza.GetSuplierAddress();
+                string CLIENT = pieza.Cliente;
+                string PRODUCTION_ORDER = pieza.OrdProceso;
+                string COLOR = pieza.Color;
+                string VEHICLE = pieza.Vehiculo;
+                string COMPOSITION = pieza.Formula;
+                string THICKNESS = pieza.Espesor;
+                string AQL = "NOT APPLICABLE";
+                string SAMPLE_SIZE = "100%";
+                string PRODUCTION_LOT = pieza.LoteLogistico;
+                #endregion
+
+                DIMENSIONAL_RESULT = await LimitLenCharactersToCellPdf(DIMENSIONAL_RESULT);
+
+                string currentPage = "";
+
+                string rutaSilueta = pieza.ImagenFt;
+                string rutaZonas = pieza.IMAGEN_PLANO_STANDAR;
+                bool esRutaLocal = false;
+
+                if (TryGetImagenes(pieza.Zfer, out var rutaSiluetaHc, out var rutaZonasHc))
+                {
+                    rutaSilueta = rutaSiluetaHc;
+                    rutaZonas = rutaZonasHc;
+                    esRutaLocal = true;
+                }
+
+
+                #region SEC - FOOTER
+                string INSPECTOR = pieza.UsuarioCrea;
+                string QUALITY_ENGINEER = pieza.GetQualityEngineer();
+                string QUALITY_MANAGER = pieza.GetQualityManager();
+                #endregion
+
+                //QuestPDF.Settings.License = LicenseType.Community;
+
+                // code in your main method
+                var document = QuestPDF.Fluent.Document.Create(container =>
+                {
+                    // page 1 content  size width 538
+                    container.Page(page =>
+                    {
+                        page.Margin(1, Unit.Centimetre);
+                        page.PageColor(Colors.White);
+                        page.Size(PageSizes.A4);
+
+                        #region SEC-1 REPORT CABECERA
+                        page.Header().Border(1).Row(row =>
+                        {
+                            //FileStream fs = GetFileStrem("src/logo.jpg");
+                            FileStream fs = File.Open("src/logo.jpg", FileMode.Open);
+
+                            row.ConstantItem(100).Background(Colors.White).Border(1).AlignMiddle()
+                            .Image(fs); //.Image("logo.jpg");
+
+                            row.ConstantItem(288).Background(Colors.White).Border(1).AlignMiddle().AlignCenter().Text(
+                                text =>
+                                {
+                                    text.Span("QUALITY REPORT - FINAL INSPECTION").FontFamily(Fonts.Arial).FontSize(14).FontColor(Colors.Black).Bold();
+                                    text.EmptyLine();
+                                    text.Span("QUALITY CONTROL DEPARTMENT").FontFamily(Fonts.Arial).FontSize(10).FontColor(Colors.Black).Bold();
+                                });
+                            row.ConstantItem(150).Background(Colors.White).Border(1).AlignCenter().AlignMiddle().Background(Colors.Yellow.Medium).Table(table =>
+                            {
+                                QuestPDF.Infrastructure.IContainer DefaultCellStyle(QuestPDF.Infrastructure.IContainer container, string backgroundColor)
+                                {
+                                    return container
+                                        .Border(1)
+                                        .BorderColor(Colors.Grey.Lighten1)
+                                        .Background(backgroundColor)
+                                        // .PaddingVertical(2)
+                                        // .PaddingHorizontal(5)
+                                        .AlignCenter()
+                                        .AlignMiddle();
+                                }
+
+                                table.ColumnsDefinition(columns =>
+                                {
+                                    columns.ConstantColumn(75);
+                                    columns.ConstantColumn(75);
+
+                                });
+
+                                table.Header(header =>
+                                {
+                                    // please be sure to call the 'header' handler!
+                                    header.Cell().Element(CellStyle).Text("CODIGO/CODE").FontFamily(Fonts.Arial).FontSize(8);
+                                    header.Cell().Element(CellStyle).Text("CORP-CAL-CF-001").FontFamily(Fonts.Arial).FontSize(8);
+                                    // you can extend existing styles by creating additional methods
+                                });
+
+                                table.Cell().Element(CellStyle).Text("VERSION/VERSION").FontFamily(Fonts.Arial).FontSize(8);
+                                table.Cell().Element(CellStyle).Text("2").FontFamily(Fonts.Arial).FontSize(8);
+
+                                table.Cell().Element(CellStyle).Text("FECHA / DATE").FontFamily(Fonts.Arial).FontSize(8);
+                                table.Cell().Element(CellStyle).Text(DateTime.Now.ToString("dd/MM/yyyy")).FontFamily(Fonts.Arial).FontSize(8);
+
+                                table.Cell().Element(CellStyle).Text("HOJA/SHEET").FontFamily(Fonts.Arial).FontSize(8);
+                                table.Cell().Element(CellStyle).Text(text => {
+
+                                    text.CurrentPageNumber().FontFamily(Fonts.Arial).FontSize(8);
+                                    //currentPage = text.CurrentPageNumber().ToString();
+                                    //var currentPage = text.CurrentPageNumber().ToString();
+                                    //text.Span(currentPage).FontFamily(Fonts.Arial).FontSize(8);
+                                });
+
+
+                                QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer container) => DefaultCellStyle(container, Colors.Grey.Lighten3);
+                            });
+                            fs.Dispose();
+                            fs.Close();
+                        });
+                        #endregion
+
+                        page.Content().PaddingVertical(3, Unit.Millimetre)
+                        .Column(column =>
+                        {
+                            #region SEC-1 CABECERA CERTIFICADO INFO
+                            column.Item().Row(row =>
+                            {
+                                row.ConstantItem(538).Background(Colors.White).Border(0).Table(table =>
+                                {
+                                    QuestPDF.Infrastructure.IContainer DefaultCellStyle(QuestPDF.Infrastructure.IContainer container, string backgroundColor)
+                                    {
+                                        return container
+                                            .Height(25)
+                                            .Border(1)
+                                            .BorderColor(Colors.Grey.Lighten1)
+                                            .Background(backgroundColor)
+
+                                            // .PaddingVertical(2)
+                                            // .PaddingHorizontal(5)
+                                            //.AlignCenter()
+                                            .AlignMiddle();
+                                    }
+
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.ConstantColumn(89);
+                                        columns.ConstantColumn(89);
+                                        columns.ConstantColumn(89);
+                                        columns.ConstantColumn(89);
+                                        columns.ConstantColumn(89);
+                                        columns.ConstantColumn(89);
+
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        // please be sure to call the 'header' handler!
+                                        header.Cell().Text("CERTIFICATE NUMBER :").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Text(CERTIFICATE_NUMBER).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Text("").FontFamily(Fonts.Arial).FontSize(8);
+                                        header.Cell().Text("").FontFamily(Fonts.Arial).FontSize(8);
+                                        header.Cell().Text("").FontFamily(Fonts.Arial).FontSize(8);
+                                        header.Cell().Text("").FontFamily(Fonts.Arial).FontSize(8);
+                                        // you can extend existing styles by creating additional methods
+                                    });
+
+                                    table.Cell().Text("SUPPLIER:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().AlignLeft().Text(SUPPLIER).FontFamily(Fonts.Arial).FontSize(8);
+
+                                    table.Cell().Text("SUPPLIER ADDRESS:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().ColumnSpan(3).AlignLeft().Text(SUPPLIER_ADDRESS).FontFamily(Fonts.Arial).FontSize(8);
+
+
+                                    table.Cell().Text("CLIENT:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(CLIENT).FontFamily(Fonts.Arial).FontSize(8);
+                                    table.Cell().Text("PRODUCTION ORDER:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(PRODUCTION_ORDER).FontFamily(Fonts.Arial).FontSize(8);
+                                    table.Cell().Text("COLOR:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(COLOR).FontFamily(Fonts.Arial).FontSize(8);
+
+                                    table.Cell().Text("VEHICLE:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(VEHICLE).FontFamily(Fonts.Arial).FontSize(8);
+                                    table.Cell().Text("COMPOSITION:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(COMPOSITION).FontFamily(Fonts.Arial).FontSize(8);
+                                    table.Cell().Text("THICKNESS(mm):").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(THICKNESS).FontFamily(Fonts.Arial).FontSize(8);
+
+                                    table.Cell().Text("AQL:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(AQL).FontFamily(Fonts.Arial).FontSize(8);
+                                    table.Cell().Text("SAMPLE SIZE:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(SAMPLE_SIZE).FontFamily(Fonts.Arial).FontSize(8);
+                                    table.Cell().Text("PRODUCTION LOT:").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                    table.Cell().Text(PRODUCTION_LOT).FontFamily(Fonts.Arial).FontSize(8);
+
+                                    QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer container) => DefaultCellStyle(container, Colors.Grey.Lighten3);
+                                });
+
+
+                            });
+                            #endregion
+
+                            column.Item().PaddingTop(2).Text("");
+
+
+                            #region SEC-2 IMAGEN TECNICA
+
+                            column.Item().Border(0).Width(538).Height(150).Row(row =>
+                            {
+                                /*  validar si se va usar la imagen de sap o una personalizada
+                                if (!string.IsNullOrEmpty(rutaSilueta))
+                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
+                                        .Image(esRutaLocal ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, rutaSilueta)) : HelpImage.GetFileContent(rutaSilueta));
+                                else
+                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle().Text("");*/
+
+                                if (pieza.ImagenFt != null && pieza.ImagenFt != "")
+                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
+                                   .Image(HelpImage.GetFileContent(pieza.ImagenFt));
+                                else
+                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
+                                   .Text("");
+
+                                if (!string.IsNullOrEmpty(rutaZonas))
+                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
+                                        .Image(esRutaLocal ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, rutaZonas)) : HelpImage.GetFileContent(rutaZonas));
+                                else
+                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle().Text("");
+                            });
+
+
+                            #endregion
+                            // column.Item().Width(100).Height(200).Image(STREAM_IMAGEN_TECNICA);
+                            column.Spacing(5);
+                            column.Item().AlignCenter().Text("Dimensional Results");
+                            column.Spacing(5);
+
+                            #region SEC-3 DIMENSIONAL RESULT (formato Sentinel: 2 tablas)
+
+                            // TODO: por ahora TODAS las filas usan el mismo parámetro 533 ("Banda negra externa")
+                            // hasta tener los ParametroInspeccionId reales de cada fila.
+                            const int ID_TEMPLATE_TEMPORAL = 533;
+                            var paramTemplate = DIMENSIONAL_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == ID_TEMPLATE_TEMPORAL);
+
+                            column.Item().Row(row =>
+                            {
+                                // ---- TABLA IZQUIERDA (4 columnas) ----
+                                row.RelativeItem().Border(1).Table(table =>
+                                {
+                                    QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer c) =>
+                                        c.Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.Grey.Lighten3).AlignCenter().AlignMiddle();
+
+                                    table.ColumnsDefinition(cols =>
+                                    {
+                                        cols.RelativeColumn(2);
+                                        cols.ConstantColumn(40);
+                                        cols.ConstantColumn(40);
+                                        cols.ConstantColumn(40);
+                                        cols.ConstantColumn(40);
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(CellStyle).Text("CHARACTERISTICS").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Element(CellStyle).Text("1").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Element(CellStyle).Text("2").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Element(CellStyle).Text("3").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Element(CellStyle).Text("4").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                    });
+
+                                    // TODO: reemplazar tolHardcode y el ID cuando existan los parámetros reales por fila
+                                    foreach (var fila in FilasIzquierda)
+                                        RenderFilaCaracteristicaDinamica(table, CellStyle, fila.Label, fila.ParamId, pieza.Zfer, DIMENSIONAL_RESULT, 4);
+                                });
+
+                                row.ConstantItem(10); // separación entre tablas
+
+                                // ---- TABLA DERECHA (2 columnas) ----
+                                row.RelativeItem().Border(1).Table(table =>
+                                {
+                                    QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer c) =>
+                                        c.Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.Grey.Lighten3).AlignCenter().AlignMiddle();
+
+                                    table.ColumnsDefinition(cols =>
+                                    {
+                                        cols.RelativeColumn(3);
+                                        cols.ConstantColumn(55);
+                                        cols.ConstantColumn(55);
+                                    });
+
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Element(CellStyle).Text("CHARACTERISTICS").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Element(CellStyle).Text("1").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        header.Cell().Element(CellStyle).Text("2").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                    });
+
+                                    foreach (var fila in FilasDerecha)
+                                        RenderFilaCaracteristicaDinamica(table, CellStyle, fila.Label, fila.ParamId, pieza.Zfer, DIMENSIONAL_RESULT, 2);
+                                });
+                            });
+
+                            #endregion
+
+                            column.Item().PaddingTop(2).Text("");
+                            column.Spacing(15);
+                            column.Item().PaddingTop(0).AlignCenter().Text("Appearance Results");
+                            column.Spacing(5);
+
+
+
+                            #region SEC-4 APARIENCIA RESULT
+
+                            column.Item().AlignCenter().Row(row =>
+                            {
+                                row.ConstantItem(538).AlignCenter().Background(Colors.White).Border(1).Table(table =>
+                                {
+                                    QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer container)
+                                    {
+                                        return container
+                                            .Border(1).BorderColor(Colors.Grey.Lighten1)
+                                            .Background(Colors.Grey.Lighten3)
+                                            .AlignCenter().AlignMiddle();
+                                    }
+
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(3);
+                                        columns.ConstantColumn(40);
+                                        columns.RelativeColumn(3);
+                                        columns.ConstantColumn(40);
+                                    });
+
+                                    // recorremos el catálogo de a pares (izquierda/derecha), igual que tu tabla actual de 2 columnas
+                                    for (int i = 0; i < FilasApariencia.Length; i += 2)
+                                    {
+                                        var filaIzq = FilasApariencia[i];
+                                        var dataIzq = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == filaIzq.ParamId);
+                                        table.Cell().Element(CellStyle).Text(filaIzq.Label).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        RenderAparienciaCheckbox(table, dataIzq);
+
+                                        if (i + 1 < FilasApariencia.Length)
+                                        {
+                                            var filaDer = FilasApariencia[i + 1];
+                                            var dataDer = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == filaDer.ParamId);
+                                            table.Cell().Element(CellStyle).Text(filaDer.Label).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                            RenderAparienciaCheckbox(table, dataDer);
+                                        }
+                                    }
+                                });
+                            });
+
+                            #endregion
+
+                            #region SEC-4.1 Defectos
+
+                            if (OBSERVACIONES.Count > 0)
+                            {
+                                column.Item().PageBreak(); // fuerza que esta sección siempre inicie en página nueva
+
+                                column.Item().Border(0).Width(538).AlignMiddle().Height(300).AlignMiddle().Row(row =>
+                                {
+
+                                    if (pieza.DefectoImagen != null && pieza.DefectoImagen != "")
+                                        row.ConstantItem(269).Border(0).AlignCenter().Width(220).Background(Colors.White).Height(300).AlignMiddle()
+                                        .Image(HelpImage.GetFileContent(pieza.DefectoImagen));
+                                    else
+                                        row.ConstantItem(269).Border(0).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
+                                        .Text("");
+
+                                    row.ConstantItem(260).Height(300).AlignMiddle().Border(1).Table(table =>
+                                    {
+                                        QuestPDF.Infrastructure.IContainer DefaultCellStyle(QuestPDF.Infrastructure.IContainer container, string backgroundColor)
+                                        {
+                                            return container
+                                                //.Height(5)
+                                                .Border(1)
+                                                .BorderColor(Colors.Grey.Lighten1)
+                                                .Background(backgroundColor)
+                                                .PaddingVertical(1)
+                                                .PaddingHorizontal(1)
+                                                .AlignCenter()
+                                                .AlignMiddle();
+                                        }
+
+                                        table.ColumnsDefinition(columns =>
+                                        {
+                                            columns.ConstantColumn(30);
+                                            columns.ConstantColumn(30);
+                                            columns.ConstantColumn(120);
+                                            columns.ConstantColumn(80);
+
+                                        });
+
+                                        table.Header(header =>
+                                        {
+                                            // please be sure to call the 'header' handler!
+                                            header.Cell().Element(CellStyle).Text("ITEM").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                            header.Cell().Element(CellStyle).Text("ZONE").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                            header.Cell().Element(CellStyle).Text("DEFECT").FontFamily(Fonts.Arial).FontSize(8).Bold();
+                                            header.Cell().Element(CellStyle).Text("SIZE").FontFamily(Fonts.Arial).FontSize(8).Bold();
+
+                                            // you can extend existing styles by creating additional methods
+                                        });
+
+                                        int index = 0;
+                                        int maxRows = 10;
+                                        foreach (PiezaConcesion obs in OBSERVACIONES.Take(maxRows))
+                                        {
+                                            index++;
+
+                                            // ITEM
+                                            table.Cell().Element(DataCellStyle).Text(index.ToString())
+                                                .FontFamily(Fonts.Arial).FontSize(7);
+
+                                            // ZONE  
+                                            table.Cell().Element(DataCellStyle).Text(obs.Zona ?? "")
+                                                .FontFamily(Fonts.Arial).FontSize(7);
+
+                                            // DEFECT - Con manejo de texto largo
+                                            table.Cell().Element(DataCellStyle).Text(obs.DefectoMaestro?.NombreIngles ?? "")
+                                                .FontFamily(Fonts.Arial).FontSize(7).LineHeight(0.9f);
+
+                                            // SIZE
+                                            table.Cell().Element(DataCellStyle).Text(obs.Tamanio ?? null)
+                                                .FontFamily(Fonts.Arial).FontSize(7);
+                                        }
+
+                                        // Estilos de celda
+                                        QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer container) =>
+                                            DefaultCellStyle(container, Colors.Grey.Lighten3);
+
+                                        QuestPDF.Infrastructure.IContainer DataCellStyle(QuestPDF.Infrastructure.IContainer container) =>
+                                            DefaultCellStyle(container, Colors.White);
+
+                                        //QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer container) => DefaultCellStyle(container, Colors.Grey.Lighten3);
+                                    });
+
+                                });
+
+                            }
+
+                            #endregion
+
+
+                            column.Spacing(10);
+
+                            #region SEC-5 OPTICAL INSPECTION
+
+                            if (INSPECCIONES_OPTICAS.Count > 0)
+                            {
+                                // Filtrar solo las inspecciones que tienen imagen
+                                var inspeccionesConImagen = INSPECCIONES_OPTICAS
+                                    .Where(x => !string.IsNullOrEmpty(x.PathImage))
+                                    .ToList();
+
+
+                                if (inspeccionesConImagen.Count > 0)
+                                {
+
+                                    for (int i = 0; i < inspeccionesConImagen.Count; i += 2)
+                                    {
+                                        column.Item().Grid(grid =>
+                                        {
+                                            grid.VerticalSpacing(10);
+                                            grid.HorizontalSpacing(10);
+                                            grid.AlignCenter();
+                                            grid.Columns(10); // 8 columnas para mejor distribución
+
+                                            //var primeraFilaItems = inspeccionesConImagen.Take(4);
+                                            var imagenesFila = inspeccionesConImagen.Skip(i).Take(2).ToList();
+
+                                            foreach (var ins in imagenesFila)
+                                            {
+                                                string parametro = (Idioma == "I" ?
+                                                    ins.ParametroInspeccion.ParametroIngles :
+                                                    ins.ParametroInspeccion.Parametro);
+
+                                                grid.Item(5).Border(1).ShowEntire().BorderColor(Colors.Grey.Lighten1)
+                                                    .Background(Colors.White).Column(column =>
+                                                    {
+                                                        // Título en la parte superior con altura fija
+                                                        column.Item().Height(25).AlignCenter().AlignMiddle()
+                                                            .Background(Colors.Grey.Lighten4)
+                                                            .Padding(2)
+                                                            .Text(parametro)
+                                                            .FontFamily(Fonts.Arial)
+                                                            .FontSize(8)
+                                                            .Bold();
+
+                                                        // Imagen en la parte inferior con altura fija
+                                                        column.Item().AlignCenter().AlignMiddle()
+                                                            .Padding(3)
+                                                            .Image(HelpImage.GetFileContent(ins.PathImage));
+                                                    });
+                                            }
+                                        });
+
+                                    }
+
+                                    // Primera fila - máximo 4 imágenes
+
+                                }
+                            }
+
+                        });
+                        #endregion
+
+                        #region SEC - FOOTER
+                        page.Footer().AlignCenter().Border(0).Row(row =>
+                        {
+                            row.ConstantItem(175).Background(Colors.White).Border(0).Height(50).AlignMiddle().AlignCenter()
+                               .Table(table =>
+                               {
+                                   table.ColumnsDefinition(columns =>
+                                   {
+                                       columns.RelativeColumn(100);
+
+                                   });
+
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text(INSPECTOR).FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text("___________________").FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text("INSPECTED").FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text("INSPECTOR").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                               });
+
+                            row.ConstantItem(175).Background(Colors.White).Border(0).Height(50).AlignMiddle().AlignCenter()
+                               .Table(table =>
+                               {
+                                   table.ColumnsDefinition(columns =>
+                                   {
+                                       columns.RelativeColumn(100);
+
+                                   });
+                                   string FOOTSECTION_QUALITY_ENGINEER = pieza.UsuarioCompania == 1003 ? "QUALITY SUPERVISOR" : "QUALITY ENGINEER";
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text(QUALITY_ENGINEER).FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text("___________________").FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text("CHECKED").FontFamily(Fonts.Arial).FontSize(9);
+
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text(FOOTSECTION_QUALITY_ENGINEER).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                               });
+                            row.ConstantItem(175).Background(Colors.White).Border(0).Height(50).AlignMiddle().AlignCenter()
+                               .Table(table =>
+                               {
+                                   table.ColumnsDefinition(columns =>
+                                   {
+                                       columns.RelativeColumn(100);
+
+                                   });
+
+                                   string FOOTSECTION_QUALITY_MANAGER = pieza.UsuarioCompania == 1003 ? "QUALITY COORDINATOR" : "QUALITY MANAGER";
+
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text(QUALITY_MANAGER).FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text("___________________").FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text("AUTHORIZED").FontFamily(Fonts.Arial).FontSize(9);
+                                   table.Cell().Border(0).BorderColor(Colors.Grey.Lighten1).AlignCenter().Text(FOOTSECTION_QUALITY_MANAGER).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                               });
+
+
+                        });
+                        #endregion
+                    });
+
+                });
+
+
+                // instead of the standard way of generating a PDF file
+                document.GeneratePdf(fileName);
+
+            }
+
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
+
+
+            return fileName;
+        }
+
+        #endregion
+
+        #region Certificados Estandar
+        public async Task<string> CertificadoPDFIngles(string Idioma, CertificadoIf certificado, PiezaSap pieza,
+        List<CertificadoIfdimension> DIMENSIONAL_RESULT, List<CertificadoIfapariencias> APARIENCIA_RESULT,
+        List<InspeccionOptica> INSPECCIONES_OPTICAS, List<PiezaConcesion> OBSERVACIONES)
+        {
+            var zferSentinel = new HashSet<string>
+            {
+                "700167179",
+                "700167180",
+                "700165336",
+                "700165337",
+                "700164766",
+            };
+            pieza.Zfer = pieza.Zfer.Substring(9);
+            bool esSentinel = pieza.Zfer != null && zferSentinel.Contains(pieza.Zfer.Trim());
+
+            if (esSentinel)
+            {
+                return await CertificadoPDFSglassSentinel(Idioma, certificado, pieza,
+                    DIMENSIONAL_RESULT, APARIENCIA_RESULT, INSPECCIONES_OPTICAS, OBSERVACIONES);
+            }
+
+            return await CertificadoPDFSglassInglesEstandar(Idioma, certificado, pieza,
+                DIMENSIONAL_RESULT, APARIENCIA_RESULT, INSPECCIONES_OPTICAS, OBSERVACIONES);
+        }
+        public async Task<string> CertificadoPDFSglassInglesEstandar(string Idioma,CertificadoIf certificado,PiezaSap pieza, List<CertificadoIfdimension> DIMENSIONAL_RESULT, List<CertificadoIfapariencias> APARIENCIA_RESULT, List<InspeccionOptica> INSPECCIONES_OPTICAS, List<PiezaConcesion> OBSERVACIONES)
         {
             string UrlImageGordon = "http://4.228.184.32:8081/Userimage/";
             string fileName = "Reports/Results/" + certificado.Id.ToString() +"/" + pieza.LoteLogistico + ".pdf";
@@ -1675,35 +2521,6 @@ namespace AGP.Gordon.ServiceLayer
             
             return "";
         }
-
-
-        /*
-        public void CargarInformacionEnExcel(string plantillaRuta, string resultadoRuta, string texto, string imagenRuta)
-        {
-            // Cargamos la plantilla de Excel existente
-            FileInfo plantillaArchivo = new FileInfo(plantillaRuta);
-            using (ExcelPackage excelPackage = new ExcelPackage(plantillaArchivo))
-            {
-                // Obtenemos la hoja de cálculo del archivo Excel
-                ExcelWorksheet worksheet = excelPackage.Workbook.Worksheets["Hoja1"];
-
-                // Agregamos el texto a una celda específica
-                worksheet.Cells["A1"].Value = texto;
-
-                // Cargamos la imagen y la insertamos en una celda específica
-                if (!string.IsNullOrEmpty(imagenRuta))
-                {
-                    worksheet = _HelpExcel.AddImageToSheet(worksheet, imagenRuta,"Imagen", 3, 3);
-                }
-
-                // Insertamos una forma (shape) en el archivo Excel
-                worksheet = _HelpExcel.AddShapeToExcel(worksheet, "Shape1", "Ejemplo con Help",10,10,100,50);
-                
-                // Guardamos el archivo de Excel con los cambios
-                FileInfo resultadoArchivo = new FileInfo(resultadoRuta);
-                excelPackage.SaveAs(resultadoArchivo);
-            }
-        }*/
 
 
         public void GenerarExcel(string plantillaRuta, string resultadoRuta, string texto, string imagenRuta)
