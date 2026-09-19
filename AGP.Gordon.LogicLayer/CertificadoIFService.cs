@@ -30,14 +30,14 @@ namespace AGP.Gordon.ServiceLayer
     public class CertificadoIFService
     {
         // Clave: Zfer del cliente especial. Valor: rutas fijas en el proyecto.  (certificados sentinel)
-        private static readonly Dictionary<string, (string Silueta, string Zonas)> _mapa =
-            new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase)
+        private static readonly Dictionary<string, (string Silueta, string Zonas, string Defectos)> _mapa =
+            new Dictionary<string, (string, string, string)>(StringComparer.OrdinalIgnoreCase)
         {
-        { "700167180", ("src/sentinel/delantero_derecho_zonas.jpg", "src/sentinel/delantero_derecho_zonas.jpg") },
-        { "700167179", ("src/sentinel/delantera_izquierda_zonas.jpg", "src/sentinel/delantera_izquierda_zonas.jpg") },
-        { "700165337",   ("src/sentinel/trazera_derecha_zonas.jpg",   "src/sentinel/trazera_derecha_zonas.jpg") },
-        { "700165336",    ("src/sentinel/trazera_izquierda_zonas.jpg",    "src/sentinel/trazera_izquierda_zonas.jpg") },
-        { "700164766",    ("src/sentinel/parabrisas_zonas.jpg",    "src/sentinel/parabrisas_zonas.jpg") }
+        { "700167179", ("src/sentinel/1.jpg", "src/sentinel/01.jpg","src/sentinel/001_defects.jpg") },//delantero izquiedo
+        { "700167180", ("src/sentinel/2.jpg", "src/sentinel/02.jpg","src/sentinel/002_defects.jpg") },//delantero derecho
+        { "700165336",    ("src/sentinel/3.jpg",    "src/sentinel/03.jpg","src/sentinel/003_defects.jpg") }, //trazera izquierda zonas
+        { "700165337",   ("src/sentinel/4.jpg",   "src/sentinel/04.jpg","src/sentinel/004_defects.jpg") },//trazera derecha zonas
+        { "700164766",    ("src/sentinel/0.jpg",    "src/sentinel/00.jpg","src/sentinel/000_defects.jpg") } //parabrisas_zonas
         };
 
   
@@ -52,6 +52,7 @@ namespace AGP.Gordon.ServiceLayer
         }
 
         #region Funciones para Certificados Sentinel
+
 
         private static readonly (string Label, int ParamId)[] FilasIzquierda = new[]
         {
@@ -69,24 +70,84 @@ namespace AGP.Gordon.ServiceLayer
             ("Mdp Zone 2",             740),
         };
 
+        // ---- GRUPO PARABRISAS ----
+        private static readonly (string Label, int ParamId)[] ParabrisasIzquierda = new[]
+        {
+            ("Zebra Reflection",              820),
+            ("Package edge appareance",       635),
+            ("Silkscreen appareance",         461),
+            ("Thermographic imaging",         827),
+            ("Distortion with zebra at 45°",  822),
+            ("Distortion with zebra at 0°",   821),
+            ("Distortion without zebra",      823),
+            ("double image",                  429),
+        };
+
+        private static readonly (string Label, int ParamId)[] ParabrisasDerecha = new[]
+        {
+            ("Appareance outer side",         824),
+            ("Black band design",             504),
+            ("Appareance inner side",         825),
+            ("Finishing and cleaning edges",  634),
+            ("Logo/Traceability",             826),
+            ("Mass Defect",                   460),
+            ("Color Ap",                      828),
+        };
+
+        // ---- GRUPO LATERALES ----
+        private static readonly (string Label, int ParamId)[] LateralesIzquierda = new[]
+        {
+            ("Zebra Reflection",              820),
+            ("Package edge appareance",       635),
+            ("Silkscreen appareance",         461),
+            ("Mass Defect",                   460),
+            ("Distortion with zebra at 45°",  822),
+            ("Distortion with zebra at 0°",   821),
+            ("Distortion without zebra",      823),
+            
+        };
+
+        private static readonly (string Label, int ParamId)[] LateralesDerecha = new[]
+        {
+            ("Appareance outer side",         824),
+            ("Black band design",             504),
+            ("Appareance inner side",         825),
+            ("Finishing and cleaning edges",  634),
+            ("Color Ap",                      828),
+            ("Logo/Traceability",             826),
+            ("ISRA.",             829),
+        };
+
+        private static readonly HashSet<string> ZferLaterales = new()
+        {
+            "700167179", "700167180", "700165336", "700165337"
+        };
+
+        private static ((string, int)[] Izquierda, (string, int)[] Derecha) GetLayoutApariencia(string? zfer)
+        {
+            if (zfer != null && ZferLaterales.Contains(zfer.Trim()))
+                return (LateralesIzquierda, LateralesDerecha);
+
+            return (ParabrisasIzquierda, ParabrisasDerecha); // default/fallback: parabrisas
+        }
         private static readonly (string Label, int ParamId)[] FilasApariencia = new[]
         {
-            ("Image Reflection",              0),   // TODO: ID pendiente
-            ("Package edge appareance",     635),
-            ("Silkscreen appareance",       461),
-            ("Thermographic imaging",         0),   // TODO
-            ("Distortion with Zebra at 45",   0),   // TODO
-            ("Distortion with Zebra at 0",    0),   // TODO
-            ("Distortion with Zebra",         0),   // TODO
-            ("double image",                  0),   // TODO
-            ("Appareance external face",      0),   // TODO
-            ("Black band design",             0),   // TODO
-            ("Appareance inner side",         0),   // TODO
-            ("Finishing and cleaning edges", 634),
-            ("Gradient",                     578),
-            ("Mass Defect",                  460),
-            ("Color",                        633),
-            ("Logo (art)",                   459),
+            ("Image Reflection",              820),
+            ("Package edge appareance",       635),
+            ("Silkscreen appareance",         461),
+            ("Thermographic imaging",         827),
+            ("Distortion with zebra at 45°",  822),
+            ("Distortion with zebra at 0°",   821),
+            ("Distortion without zebra",      823),
+            ("double image",                  429),
+            ("Appareance external face",      824),
+            ("Black band design",             504),
+            ("Appareance inner side",         825),
+            ("Finishing and cleaning edges",  634),
+            ("Gradient",                      578),
+            ("Mass Defect",                   460),
+            ("Color",                         828),
+            ("Logo (art)",                    826),
         };
 
         // TODO: URGENTE/TEMPORAL — reemplazar por tabla maestra Parámetro+Valor+Tolerancia cuando esté disponible en el sistema principal.
@@ -150,17 +211,19 @@ namespace AGP.Gordon.ServiceLayer
                 },
                 // TODO: agregar 700167179, 700167180, 700165336, 700165337 cuando lleguen las tolerancias reales
             };
-        public static bool TryGetImagenes(string zfer, out string rutaSilueta, out string rutaZonas)
+        public static bool TryGetImagenes(string? zfer, out string rutaSilueta, out string rutaZonas, out string rutaDefectos)
         {
-      
+
             if (zfer != null && _mapa.TryGetValue(zfer.Trim(), out var val))
             {
                 rutaSilueta = val.Silueta;
                 rutaZonas = val.Zonas;
+                rutaDefectos = val.Defectos;
                 return true;
             }
             rutaSilueta = null;
             rutaZonas = null;
+            rutaDefectos = null;
             return false;
         }
 
@@ -272,6 +335,80 @@ namespace AGP.Gordon.ServiceLayer
             {
                 celda.Text(""); // NO CUMPLE explícito: casilla vacía, como ya definimos antes
             }
+        }
+
+        private static void RenderAparienciaCheckboxPorValor(QuestPDF.Fluent.TableDescriptor table, string? valor)
+        {
+            bool cumple = string.Equals(valor?.Trim(), "CUMPLE", StringComparison.OrdinalIgnoreCase);
+
+            var celda = table.Cell()
+                .Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White)
+                .AlignCenter().AlignMiddle().Padding(2);
+
+            if (cumple)
+            {
+                string rutaIcono = Path.Combine(AppContext.BaseDirectory, "src", "iconos", "check.png");
+                celda.MaxWidth(16).MaxHeight(16).Image(rutaIcono);
+            }
+            else
+            {
+                celda.Text(""); // NO CUMPLE, NA, o parámetro ausente: vacío
+            }
+        }
+        private static void RenderSiluetaConDefectos(
+        QuestPDF.Infrastructure.IContainer container,
+        string rutaImagen,
+        bool esRutaLocal,
+        List<PiezaConcesion> observaciones,
+        float origenAncho = 790f,
+        float origenAlto = 380f)
+        {
+            container.Canvas((canvas, size) =>
+            {
+                byte[] imageBytes = esRutaLocal
+                    ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, rutaImagen))
+                    : HelpImage.GetFileContent(rutaImagen);
+
+                using var bitmap = SkiaSharp.SKBitmap.Decode(imageBytes);
+                if (bitmap == null) return;
+
+                // Escala manteniendo proporción dentro del espacio disponible
+                float scale = Math.Min(size.Width / bitmap.Width, size.Height / bitmap.Height);
+                float drawWidth = bitmap.Width * scale;
+                float drawHeight = bitmap.Height * scale;
+                float offsetX = (size.Width - drawWidth) / 2;
+                float offsetY = (size.Height - drawHeight) / 2;
+
+                canvas.DrawBitmap(bitmap, new SkiaSharp.SKRect(offsetX, offsetY, offsetX + drawWidth, offsetY + drawHeight));
+
+                // Factor de conversión: coordenadas guardadas (base 790x380) -> tamaño real dibujado
+                float scaleX = drawWidth / origenAncho;
+                float scaleY = drawHeight / origenAlto;
+
+                int index = 0;
+                foreach (var obs in observaciones.Where(o => o.PositionX.HasValue && o.PositionY.HasValue))
+                {
+                    index++;
+                    float px = offsetX + (obs.PositionX!.Value * scaleX);
+                    float py = offsetY + (obs.PositionY!.Value * scaleY);
+
+                    using var puntoPaint = new SkiaSharp.SKPaint
+                    {
+                        Color = SkiaSharp.SKColors.Red,
+                        Style = SkiaSharp.SKPaintStyle.Fill,
+                        IsAntialias = true
+                    };
+                    canvas.DrawCircle(px, py, 2f, puntoPaint);
+
+                    using var textoPaint = new SkiaSharp.SKPaint
+                    {
+                        Color = SkiaSharp.SKColors.Red,
+                        TextSize = 9,
+                        IsAntialias = true
+                    };
+                    canvas.DrawText(index.ToString(), px + 5, py + 4, textoPaint);
+                }
+            });
         }
 
         #endregion
@@ -522,12 +659,15 @@ namespace AGP.Gordon.ServiceLayer
 
                 string rutaSilueta = pieza.ImagenFt;
                 string rutaZonas = pieza.IMAGEN_PLANO_STANDAR;
+                string rutaDefectos = pieza.DefectoImagen; // fallback SAP
+
                 bool esRutaLocal = false;
 
-                if (TryGetImagenes(pieza.Zfer, out var rutaSiluetaHc, out var rutaZonasHc))
+                if (TryGetImagenes(pieza.Zfer, out var rutaSiluetaHc, out var rutaZonasHc, out var rutaDefectosHc))
                 {
                     rutaSilueta = rutaSiluetaHc;
                     rutaZonas = rutaZonasHc;
+                    rutaDefectos = rutaDefectosHc;
                     esRutaLocal = true;
                 }
 
@@ -705,25 +845,32 @@ namespace AGP.Gordon.ServiceLayer
 
                             column.Item().Border(0).Width(538).Height(150).Row(row =>
                             {
-                                /*  validar si se va usar la imagen de sap o una personalizada
                                 if (!string.IsNullOrEmpty(rutaSilueta))
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                        .Image(esRutaLocal ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, rutaSilueta)) : HelpImage.GetFileContent(rutaSilueta));
+                                    row.ConstantItem(269).Border(1).AlignCenter().AlignMiddle()
+                                        .Width(220).Height(140).Background(Colors.White)
+                                        .PaddingTop(10)
+                                        .Image(esRutaLocal ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, rutaSilueta)) : HelpImage.GetFileContent(rutaSilueta))
+                                        .FitArea();
                                 else
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle().Text("");*/
+                                    row.ConstantItem(269).Border(1).AlignCenter().AlignMiddle()
+                                        .Width(220).Height(140).Background(Colors.White).Text("");
 
-                                if (pieza.ImagenFt != null && pieza.ImagenFt != "")
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                   .Image(HelpImage.GetFileContent(pieza.ImagenFt));
-                                else
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                   .Text("");
+                                /* if (pieza.ImagenFt != null && pieza.ImagenFt != "")
+                                  row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
+                                 .Image(HelpImage.GetFileContent(pieza.ImagenFt));
+                              else
+                                  row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
+                                 .Text("");*/
 
                                 if (!string.IsNullOrEmpty(rutaZonas))
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                        .Image(esRutaLocal ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, rutaZonas)) : HelpImage.GetFileContent(rutaZonas));
+                                    row.ConstantItem(269).Border(1).AlignCenter().AlignMiddle()
+                                        .Width(220).Height(140).Background(Colors.White)
+                                        .PaddingTop(10)
+                                        .Image(esRutaLocal ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, rutaZonas)) : HelpImage.GetFileContent(rutaZonas))
+                                        .FitArea();
                                 else
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle().Text("");
+                                    row.ConstantItem(269).Border(1).AlignCenter().AlignMiddle()
+                                        .Width(220).Height(140).Background(Colors.White).Text("");
                             });
 
 
@@ -809,6 +956,8 @@ namespace AGP.Gordon.ServiceLayer
 
                             #region SEC-4 APARIENCIA RESULT
 
+                            var (colIzquierda, colDerecha) = GetLayoutApariencia(pieza.Zfer);
+
                             column.Item().AlignCenter().Row(row =>
                             {
                                 row.ConstantItem(538).AlignCenter().Background(Colors.White).Border(1).Table(table =>
@@ -829,20 +978,34 @@ namespace AGP.Gordon.ServiceLayer
                                         columns.ConstantColumn(40);
                                     });
 
-                                    // recorremos el catálogo de a pares (izquierda/derecha), igual que tu tabla actual de 2 columnas
-                                    for (int i = 0; i < FilasApariencia.Length; i += 2)
-                                    {
-                                        var filaIzq = FilasApariencia[i];
-                                        var dataIzq = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == filaIzq.ParamId);
-                                        table.Cell().Element(CellStyle).Text(filaIzq.Label).FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                        RenderAparienciaCheckbox(table, dataIzq);
+                                    int filas = Math.Max(colIzquierda.Length, colDerecha.Length);
 
-                                        if (i + 1 < FilasApariencia.Length)
+                                    for (int i = 0; i < filas; i++)
+                                    {
+                                        if (i < colIzquierda.Length)
                                         {
-                                            var filaDer = FilasApariencia[i + 1];
-                                            var dataDer = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == filaDer.ParamId);
-                                            table.Cell().Element(CellStyle).Text(filaDer.Label).FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                            RenderAparienciaCheckbox(table, dataDer);
+                                            var (label, paramId) = colIzquierda[i];
+                                            var data = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == paramId);
+                                            table.Cell().Element(CellStyle).Text(label).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                            RenderAparienciaCheckboxPorValor(table, data?.Valor);
+                                        }
+                                        else
+                                        {
+                                            table.Cell().Element(CellStyle).Text("");
+                                            table.Cell().Element(CellStyle).Text("");
+                                        }
+
+                                        if (i < colDerecha.Length)
+                                        {
+                                            var (label, paramId) = colDerecha[i];
+                                            var data = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == paramId);
+                                            table.Cell().Element(CellStyle).Text(label).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                            RenderAparienciaCheckboxPorValor(table, data?.Valor);
+                                        }
+                                        else
+                                        {
+                                            table.Cell().Element(CellStyle).Text("");
+                                            table.Cell().Element(CellStyle).Text("");
                                         }
                                     }
                                 });
@@ -858,13 +1021,20 @@ namespace AGP.Gordon.ServiceLayer
 
                                 column.Item().Border(0).Width(538).AlignMiddle().Height(300).AlignMiddle().Row(row =>
                                 {
-
+                                    /*
                                     if (pieza.DefectoImagen != null && pieza.DefectoImagen != "")
                                         row.ConstantItem(269).Border(0).AlignCenter().Width(220).Background(Colors.White).Height(300).AlignMiddle()
                                         .Image(HelpImage.GetFileContent(pieza.DefectoImagen));
                                     else
                                         row.ConstantItem(269).Border(0).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                        .Text("");
+                                        .Text("");*/
+
+                                    if (!string.IsNullOrEmpty(rutaDefectos))
+                                        row.ConstantItem(269).Border(0).Width(220).Height(300)
+                                            .Element(c => RenderSiluetaConDefectos(c, rutaDefectos, esRutaLocal, OBSERVACIONES));
+                                    else
+                                        row.ConstantItem(269).Border(0).Width(220).Height(300)
+                                            .AlignCenter().AlignMiddle().Text("");
 
                                     row.ConstantItem(260).Height(300).AlignMiddle().Border(1).Table(table =>
                                     {

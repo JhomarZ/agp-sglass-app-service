@@ -156,7 +156,7 @@ public partial class PiezaSap
             case 1001:
                 suplier = "Elena Benjarano"; break;
             case 1002:
-                suplier = "Lina Tovar"; break;
+                suplier = "Wilson Rubio"; break;
             case 1003:
                 suplier = "Jeovane Rocha"; break;
         }
