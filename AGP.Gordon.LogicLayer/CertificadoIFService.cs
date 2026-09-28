@@ -53,164 +53,42 @@ namespace AGP.Gordon.ServiceLayer
 
         #region Funciones para Certificados Sentinel
 
+        // TEMPORAL: parámetros de Apariencia asignados al certificado que NO se muestran en Sentinel,
+        // hasta definirlo con los usuarios. Reemplazar por los Id reales de Logo (art) y Logo (location).
+        private static readonly HashSet<int> AparienciaExcluidaSentinel = new() { 426,459,25,213 };
+        public record FilaApariencia(int ParamId, string Label, string? Valor);
 
-        private static readonly (string Label, int ParamId)[] FilasIzquierda = new[]
+        // Arma las dos columnas de Apariencia desde los parámetros asignados al certificado
+        private static (List<FilaApariencia> Izq, List<FilaApariencia> Der) GetFilasApariencia(
+            List<CertificadoIfapariencias> apariencia)
         {
-            ("External black band",    533),
-            ("Internal black band 1",  639),
-            ("Internal black band 2",  671),
-            ("Thickness",              593),
-        };
+            var filas = apariencia
+                .Select(a => new { A = a, Id = (int?)a.ParametroInspeccionId })
+                .Where(x => x.Id.HasValue && !AparienciaExcluidaSentinel.Contains(x.Id.Value))
+                .GroupBy(x => x.Id!.Value)                       // un solo renglón por parámetro
+                .Select(g =>
+                {
+                    var a = g.First().A;
+                    string label = Limpiar(a.ParametroInspeccion?.ParametroIngles);
+                    if (label.Length == 0) label = Limpiar(a.Parametro);
+                    if (label.Length == 0) label = g.Key.ToString();
+                    return (Fila: new FilaApariencia(g.Key, label, a.Valor),
+                            Orden: a.ParametroInspeccion?.Orden ?? int.MaxValue);
+                })
+                .OrderBy(x => x.Orden).ThenBy(x => x.Fila.ParamId)
+                .Select(x => x.Fila)
+                .ToList();
 
-        private static readonly (string Label, int ParamId)[] FilasDerecha = new[]
-        {
-            ("Hot resistance, Ohms",   682),
-            ("Cold resistance, Ohms",  680), // ⚠ confirmar
-            ("Mdp Zone 1",             739),
-            ("Mdp Zone 2",             740),
-        };
+            int corte = (filas.Count + 1) / 2;                   // izquierda = mitad, redondeada hacia arriba
+            return (filas.Take(corte).ToList(), filas.Skip(corte).ToList());
 
-        // ---- GRUPO PARABRISAS ----
-        private static readonly (string Label, int ParamId)[] ParabrisasIzquierda = new[]
-        {
-            ("Zebra Reflection",              820),
-            ("Package edge appareance",       635),
-            ("Silkscreen appareance",         461),
-            ("Thermographic imaging",         827),
-            ("Distortion with zebra at 45°",  822),
-            ("Distortion with zebra at 0°",   821),
-            ("Distortion without zebra",      823),
-            ("double image",                  429),
-        };
-
-        private static readonly (string Label, int ParamId)[] ParabrisasDerecha = new[]
-        {
-            ("Appareance outer side",         824),
-            ("Black band design",             504),
-            ("Appareance inner side",         825),
-            ("Finishing and cleaning edges",  634),
-            ("Logo/Traceability",             826),
-            ("Mass Defect",                   460),
-            ("Color Ap",                      828),
-        };
-
-        // ---- GRUPO LATERALES ----
-        private static readonly (string Label, int ParamId)[] LateralesIzquierda = new[]
-        {
-            ("Zebra Reflection",              820),
-            ("Package edge appareance",       635),
-            ("Silkscreen appareance",         461),
-            ("Mass Defect",                   460),
-            ("Distortion with zebra at 45°",  822),
-            ("Distortion with zebra at 0°",   821),
-            ("Distortion without zebra",      823),
-            
-        };
-
-        private static readonly (string Label, int ParamId)[] LateralesDerecha = new[]
-        {
-            ("Appareance outer side",         824),
-            ("Black band design",             504),
-            ("Appareance inner side",         825),
-            ("Finishing and cleaning edges",  634),
-            ("Color Ap",                      828),
-            ("Logo/Traceability",             826),
-            ("ISRA.",             829),
-        };
-
-        private static readonly HashSet<string> ZferLaterales = new()
-        {
-            "700167179", "700167180", "700165336", "700165337"
-        };
-
-        private static ((string, int)[] Izquierda, (string, int)[] Derecha) GetLayoutApariencia(string? zfer)
-        {
-            if (zfer != null && ZferLaterales.Contains(zfer.Trim()))
-                return (LateralesIzquierda, LateralesDerecha);
-
-            return (ParabrisasIzquierda, ParabrisasDerecha); // default/fallback: parabrisas
+            // Quita espacios al inicio/fin y colapsa los repetidos ("Distortion  without zebra")
+            static string Limpiar(string? s) => string.IsNullOrWhiteSpace(s)
+                ? ""
+                : string.Join(" ", s.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         }
-        private static readonly (string Label, int ParamId)[] FilasApariencia = new[]
-        {
-            ("Image Reflection",              820),
-            ("Package edge appareance",       635),
-            ("Silkscreen appareance",         461),
-            ("Thermographic imaging",         827),
-            ("Distortion with zebra at 45°",  822),
-            ("Distortion with zebra at 0°",   821),
-            ("Distortion without zebra",      823),
-            ("double image",                  429),
-            ("Appareance external face",      824),
-            ("Black band design",             504),
-            ("Appareance inner side",         825),
-            ("Finishing and cleaning edges",  634),
-            ("Gradient",                      578),
-            ("Mass Defect",                   460),
-            ("Color",                         828),
-            ("Logo (art)",                    826),
-        };
-
-        // TODO: URGENTE/TEMPORAL — reemplazar por tabla maestra Parámetro+Valor+Tolerancia cuando esté disponible en el sistema principal.
-        private static readonly Dictionary<string, Dictionary<int, string[]>> TolerenciasPorZfer =
-            new Dictionary<string, Dictionary<int, string[]>>
-            {
-                ["700164766"] = new Dictionary<int, string[]> // Parabrisas
-                {
-                    [533] = new[] { "67±3", "33±3", "108±3", "33±3" },  //External black band
-                    [639] = new[] { "68", "36", "134", "36" },          //Internal black band 1
-                    [671] = new[] { "297+3", "41+3", "186+3", "51+3" }, //Internal black band 2
-                    [593] = new[] { "41±2", "41±2", "41±2", "41±2" },   //Thickness
-                    [682] = new[] { "0,67-1,24", "0,67-1,24" },         //Hot resistance, Ohms
-                    [680] = new[] { "0,67-1,24", "0,67-1,24" },         //Cold resistance, Ohms
-                    [739] = new[] { "<175", "<175" },                   //Mdp Zone 1
-                    [740] = new[] { "<175", "<175" },                   //Mdp Zone 2
-                },
-                ["700165336"] = new Dictionary<int, string[]> // PIEZA: TRAZERA IZQUIERDA
-                {
-                    [533] = new[] { "34±2", "34±2", "58±2", "37±2" },  //External black band
-                    [639] = new[] { "65±2", "59±2", "-", "51±2" },          //Internal black band 1
-                    [671] = new[] { "83±2", "67±2", "68±2", "50±2" }, //Internal black band 2
-                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
-                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
-                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
-                    [739] = new[] { "-", "-" },                   //Mdp Zone 1
-                    [740] = new[] { "-", "-" },                   //Mdp Zone 2
-                },
-                ["700165337"] = new Dictionary<int, string[]> // PIEZA: TRASERA DERECHA 
-                {
-                    [533] = new[] { "34±2", "34±2", "58±2", "37±2" },  //External black band
-                    [639] = new[] { "65±2", "59±2", "-", "51±2" },          //Internal black band 1
-                    [671] = new[] { "83±2", "67±2", "68±2", "50±2" }, //Internal black band 2
-                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
-                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
-                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
-                    [739] = new[] { "-", "-" },                   //Mdp Zone 1
-                    [740] = new[] { "-", "-" },                   //Mdp Zone 2
-                },
-                ["700167179"] = new Dictionary<int, string[]> // PIEZA: TRASERA DERECHA 
-                {
-                    [533] = new[] { "34±2", "37±2", "58±2", "34±2" },  //External black band
-                    [639] = new[] { "65±2", "51±2", "-", "59±2" },          //Internal black band 1
-                    [671] = new[] { "83±2", "50±2", "68±2", "67±2" }, //Internal black band 2
-                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
-                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
-                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
-                    [739] = new[] { "<89", "<275" },                   //Mdp Zone 1
-                    [740] = new[] { "<89", "<275" },                   //Mdp Zone 2
-                },
-                ["700167180"] = new Dictionary<int, string[]> // PIEZA: DELANTERO DERECHO  
-                {
-                    [533] = new[] { "34±2", "34±2", "58±2", "37±2" },  //External black band
-                    [639] = new[] { "65±2", "59±2", "-", "51±2" },          //Internal black band 1
-                    [671] = new[] { "83±2", "67±2", "68±2", "50±2" }, //Internal black band 2
-                    [593] = new[] { "61±2", "61±2", "61±2", "61±2" },   //Thickness
-                    [682] = new[] { "-", "-" },         //Hot resistance, Ohms
-                    [680] = new[] { "-", "-" },         //Cold resistance, Ohms
-                    [739] = new[] { "<89", "<275" },                   //Mdp Zone 1
-                    [740] = new[] { "<89", "<275" },                   //Mdp Zone 2
-                },
-                // TODO: agregar 700167179, 700167180, 700165336, 700165337 cuando lleguen las tolerancias reales
-            };
+     
+   
         public static bool TryGetImagenes(string? zfer, out string rutaSilueta, out string rutaZonas, out string rutaDefectos)
         {
 
@@ -245,96 +123,33 @@ namespace AGP.Gordon.ServiceLayer
             return todos.Take(numColumnas).Select(v => v ?? "").ToArray();
         }
 
-        // Renderiza el par de filas: "Nom. & Tol." (gris, hardcode) + "Label" (blanco, valores reales)
-        private static void RenderFilaCaracteristica(
-            QuestPDF.Fluent.TableDescriptor table,
-            Func<QuestPDF.Infrastructure.IContainer, QuestPDF.Infrastructure.IContainer> cellStyleGris,
-            string label,
-            string[] tolHardcode,      // TODO: mover a config/BD más adelante
-            CertificadoIfdimension? paramData,
-            int numColumnas)
-        {
-            // Fila gris "Nom. & Tol." — hardcodeada por ahora
-            table.Cell().Element(cellStyleGris).Text("Nom. & Tol.").FontFamily(Fonts.Arial).FontSize(8).Bold();
-            for (int i = 0; i < numColumnas; i++)
-            {
-                string tol = i < tolHardcode.Length ? tolHardcode[i] : "";
-                table.Cell().Element(cellStyleGris).Text(tol).FontFamily(Fonts.Arial).FontSize(7).Bold();
-            }
-
-            // Fila blanca con el label + valores reales (dinámico por ParametroInspeccionId)
-            table.Cell().Element(cellStyleGris).Text(label).FontFamily(Fonts.Arial).FontSize(8).Bold();
-            var valores = GetValoresDinamicos(paramData, numColumnas);
-            foreach (var val in valores)
-            {
-                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).AlignCenter()
-                     .Text(val).FontFamily(Fonts.Arial).FontSize(7);
-            }
-        }
+        // Renderiza el par de filas: "Nom. & Tol." (gris, desde ParametroInspeccionTolerancia) + label (valores medidos)
 
         private static void RenderFilaCaracteristicaDinamica(
+
             QuestPDF.Fluent.TableDescriptor table,
             Func<QuestPDF.Infrastructure.IContainer, QuestPDF.Infrastructure.IContainer> cellStyle,
-            string label, int parametroId, string zfer,
+            string label, int parametroId,
+            Dictionary<(int ParamId, int NroValor), ToleranciaValor> tolerancias,
             List<CertificadoIfdimension> dimensionalResult, int numColumnas)
         {
             var paramData = dimensionalResult.FirstOrDefault(x => x.ParametroInspeccionId == parametroId);
 
-            string[] tolerancias = (TolerenciasPorZfer.TryGetValue(zfer ?? "", out var tolPorParam)
-                                     && tolPorParam.TryGetValue(parametroId, out var tolArray))
-                ? tolArray
-                : Enumerable.Repeat("-", numColumnas).ToArray();
-
             table.Cell().Element(cellStyle).Text("Nom. & Tol.").FontFamily(Fonts.Arial).FontSize(8).Bold();
-            for (int i = 0; i < numColumnas; i++)
-                table.Cell().Element(cellStyle).Text(i < tolerancias.Length ? tolerancias[i] : "-")
-                    .FontFamily(Fonts.Arial).FontSize(7).Bold();
+            for (int i = 1; i <= numColumnas; i++)
+            {
+                string tol = tolerancias.TryGetValue((parametroId, i), out var t) ? t.Display : "-";
+                table.Cell().Element(cellStyle).Text(tol).FontFamily(Fonts.Arial).FontSize(7).Bold();
+            }
 
             table.Cell().Element(cellStyle).Text(label).FontFamily(Fonts.Arial).FontSize(8).Bold();
             string[] valores = paramData != null
-                ? GetValoresDinamicos(paramData, numColumnas)   // ya lo tienes definido
+                ? GetValoresDinamicos(paramData, numColumnas)
                 : Enumerable.Repeat("NA", numColumnas).ToArray();
 
             foreach (var val in valores)
                 table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).AlignCenter()
                     .Text(val).FontFamily(Fonts.Arial).FontSize(7);
-        }
-        private static void RenderAparienciaCheckbox(QuestPDF.Fluent.TableDescriptor table, CertificadoIfapariencias? apariencia)
-        {
-            if (apariencia == null)
-            {
-                // El parámetro no aplica a este ZFER/pieza
-                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White)
-                    .AlignCenter().AlignMiddle()
-                    .Text("NA").FontFamily(Fonts.Arial).FontSize(8).Bold();
-                return;
-            }
-
-            string valor = apariencia.Valor?.Trim() ?? "";
-
-            if (string.Equals(valor, "NA", StringComparison.OrdinalIgnoreCase))
-            {
-                table.Cell().Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White)
-                    .AlignCenter().AlignMiddle()
-                    .Text("NA").FontFamily(Fonts.Arial).FontSize(8).Bold();
-                return;
-            }
-
-            bool cumple = string.Equals(valor, "CUMPLE", StringComparison.OrdinalIgnoreCase);
-
-            var celda = table.Cell()
-                .Border(1).BorderColor(Colors.Grey.Lighten1).Background(Colors.White)
-                .AlignCenter().AlignMiddle().Padding(2);
-
-            if (cumple)
-            {
-                string rutaIcono = Path.Combine(AppContext.BaseDirectory, "src", "iconos", "check.png");
-                celda.MaxWidth(16).MaxHeight(16).Image(rutaIcono);
-            }
-            else
-            {
-                celda.Text(""); // NO CUMPLE explícito: casilla vacía, como ya definimos antes
-            }
         }
 
         private static void RenderAparienciaCheckboxPorValor(QuestPDF.Fluent.TableDescriptor table, string? valor)
@@ -355,7 +170,66 @@ namespace AGP.Gordon.ServiceLayer
                 celda.Text(""); // NO CUMPLE, NA, o parámetro ausente: vacío
             }
         }
+
+        private static byte[]? CargarBytesImagen(string? ruta, bool esRutaLocal)
+        {
+            if (string.IsNullOrEmpty(ruta)) return null;
+            return esRutaLocal
+                ? File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, ruta))
+                : HelpImage.GetFileContent(ruta);
+        }
+
+        // Alto que ocupa la imagen al ajustarla a 'ancho', según su proporción real
+        private static float CalcularAltoImagen(byte[]? bytes, float ancho, float proporcionDefault = 380f / 790f)
+        {
+            if (bytes == null) return ancho * proporcionDefault;
+            var info = SkiaSharp.SKBitmap.DecodeBounds(bytes);
+            return info.Width > 0 ? ancho * info.Height / info.Width : ancho * proporcionDefault;
+        }
         private static void RenderSiluetaConDefectos(
+    QuestPDF.Infrastructure.IContainer container,
+    byte[] imageBytes,
+    List<PiezaConcesion> observaciones,
+    float origenAncho = 790f,
+    float origenAlto = 380f)
+        {
+            container.Canvas((canvas, size) =>
+            {
+                using var bitmap = SkiaSharp.SKBitmap.Decode(imageBytes);
+                if (bitmap == null) return;
+
+                float scale = Math.Min(size.Width / bitmap.Width, size.Height / bitmap.Height);
+                float drawWidth = bitmap.Width * scale;
+                float drawHeight = bitmap.Height * scale;
+                float offsetX = (size.Width - drawWidth) / 2;
+                float offsetY = (size.Height - drawHeight) / 2;
+
+                using var imgPaint = new SkiaSharp.SKPaint { FilterQuality = SkiaSharp.SKFilterQuality.High, IsAntialias = true };
+                canvas.DrawBitmap(bitmap, new SkiaSharp.SKRect(offsetX, offsetY, offsetX + drawWidth, offsetY + drawHeight), imgPaint);
+
+                float scaleX = drawWidth / origenAncho;
+                float scaleY = drawHeight / origenAlto;
+
+                // Marcadores proporcionales al tamaño dibujado
+                float radio = Math.Max(2.5f, drawWidth / 110f);
+                float tamTexto = Math.Max(8f, drawWidth / 32f);
+
+                using var puntoPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.Red, Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true };
+                using var textoPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.Red, TextSize = tamTexto, IsAntialias = true, FakeBoldText = true };
+
+                int index = 0;
+                foreach (var obs in observaciones.Where(o => o.PositionX.HasValue && o.PositionY.HasValue))
+                {
+                    index++;
+                    float px = offsetX + obs.PositionX!.Value * scaleX;
+                    float py = offsetY + obs.PositionY!.Value * scaleY;
+
+                    canvas.DrawCircle(px, py, radio, puntoPaint);
+                    canvas.DrawText(index.ToString(), px + radio + 2, py + tamTexto / 3, textoPaint);
+                }
+            });
+        }
+        /*private static void RenderSiluetaConDefectos(
         QuestPDF.Infrastructure.IContainer container,
         string rutaImagen,
         bool esRutaLocal,
@@ -410,7 +284,7 @@ namespace AGP.Gordon.ServiceLayer
                 }
             });
         }
-
+        */
         #endregion
 
         public CertificadoIf GetById(long CertificadoId)
@@ -455,34 +329,11 @@ namespace AGP.Gordon.ServiceLayer
                     throw new Exception(ex.Message);
                 }
             }
-            /*
-            using (var db = new SapexpansionContext())
-            {
-                dimensionales = db.CertificadoIfdimensions.Where(x => x.CertificadoId== CertificadoId && x.Origen==1).ToList();
-                foreach (CertificadoIfdimension item in dimensionales)
-                {
-                    int? parametroId = item.ParametroInspeccionId;
-                    item.parametro = db.ParametrosInspeccions.Where(x=>x.Id==parametroId).FirstOrDefault();
-                }
-            }
-            return dimensionales;*/
+     
         }
 
         public async Task<List<CertificadoIfdimension>> GetMedicionesElectricas(int CertificadoId)
         {
-            /*
-            List<CertificadoIfdimension> electricas = new List<CertificadoIfdimension>();
-            using (var db = new SapexpansionContext())
-            {
-                electricas = db.CertificadoIfdimensions.Where(x => x.CertificadoId == CertificadoId && x.Origen == 2).ToList();
-                foreach (CertificadoIfdimension item in electricas)
-                {
-                    int? parametroId = item.ParametroInspeccionId;
-                    item.parametro = db.ParametrosInspeccions.Where(x => x.Id == parametroId).FirstOrDefault();
-                }
-            }
-            return electricas;*/
-
             using (var db = new SapexpansionContext())
             {
                 try
@@ -496,22 +347,6 @@ namespace AGP.Gordon.ServiceLayer
                                 && x.Origen== 2)
                         .AsSplitQuery() // Mejora el rendimiento para queries con Include
                         .ToListAsync();
-                    /*
-                    var electricas = db.CertificadoIfdimensions
-                        .Where(x => x.CertificadoId == CertificadoId && x.Origen == 2)
-                        .Select(item => new
-                        {
-                            Dimension = item,
-                            Parametro = item.ParametroInspeccionId.HasValue ?
-                                db.ParametrosInspeccions.FirstOrDefault(p => p.Id == item.ParametroInspeccionId) : null
-                        })
-                        .ToList()
-                        .Select(x =>
-                        {
-                            x.Dimension.Parametro = x.Parametro;
-                            return x.Dimension;
-                        })
-                        .ToList();*/
 
                     return inspecionesElectricas;
                 }
@@ -554,35 +389,10 @@ namespace AGP.Gordon.ServiceLayer
                 }
             }
 
-
-            /*
-            List<CertificadoIfapariencias> apariencias = new List<CertificadoIfapariencias>();
-            using (var db = new SapexpansionContext())
-            {
-                apariencias = db.CertificadoIfapariencia.Where(x => x.CertificadoId == CertificadoId).ToList();
-                foreach (CertificadoIfapariencias item in apariencias)
-                {
-                    int? parametroId = item.ParametroInspeccionId;
-                    item.parametro = db.ParametrosInspeccions.Where(x => x.Id == parametroId).FirstOrDefault();
-                }
-            }
-            return apariencias;*/
         }
 
         public async Task< List<InspeccionOptica>> GetInspeccionesOpticas(long certificadoId)
         {
-            /*
-            List<InspeccionOptica> inspeccionesOpticas = new List<InspeccionOptica>();
-            using (var db = new SapexpansionContext())
-            {
-                inspeccionesOpticas = db.InspeccionOpticas.Where(x => x.CertificadoId == CertificadoId && x.ParametroInspeccionId!=534 && x.ParametroInspeccionId != 274 && x.TieneImagen=1).ToList();
-                foreach (InspeccionOptica item in inspeccionesOpticas)
-                {
-                    int? parametroId = item.ParametroInspeccionId;
-                    item.parametro = db.ParametrosInspeccions.Where(x => x.Id == parametroId).FirstOrDefault();
-                }
-            }
-            return inspeccionesOpticas;*/
             try
             {
                 using var db = new SapexpansionContext();
@@ -597,11 +407,6 @@ namespace AGP.Gordon.ServiceLayer
                             )
                     .AsSplitQuery() // Mejora el rendimiento para queries con Include
                     .ToListAsync();
-                /*
-                _logger.LogInformation(
-                    "Retrieved {Count} optical inspections for certificate {CertificadoId}",
-                    inspeccionesOpticas.Count,
-                    certificadoId);*/
 
                 return inspeccionesOpticas;
             }
@@ -632,12 +437,60 @@ namespace AGP.Gordon.ServiceLayer
         }
 
         #region Certificados Sentinel
+
+        public record FilaCaracteristica(int ParamId, string Label, int NumValores);
+        public async Task<Dictionary<(int ParamId, int NroValor), ToleranciaValor>> GetTolerancias(string? zfer)
+        {
+            var z = zfer?.Trim();
+            using var db = new SapexpansionContext();
+            var filas = await db.ParametroInspeccionTolerancias.AsNoTracking()
+                .Where(x => x.Activo && (x.Zfer == z || x.Zfer == null))
+                .ToListAsync();
+
+            // La fila específica del ZFER gana sobre la genérica (Zfer NULL)
+            return filas.OrderBy(x => x.Zfer == null)
+                .GroupBy(x => (x.ParametroInspeccionId, (int)x.NroValor))
+                .ToDictionary(g => g.Key, g => ToleranciaValor.From(g.First()));
+        }
+
+        private static float AnchoColumna(int n) => n <= 2 ? 55f : n <= 4 ? 40f : 150f / n;
+        public async Task<List<FilaCaracteristica>> GetFilasDimensionales(string? zfer)
+        {
+            var z = zfer?.Trim();
+            using var db = new SapexpansionContext();
+
+            var tol = await db.ParametroInspeccionTolerancias.AsNoTracking()
+                .Where(x => x.Activo && (x.Zfer == z || x.Zfer == null))
+                .ToListAsync();
+
+            var ids = tol.Select(x => x.ParametroInspeccionId).Distinct().ToList();
+            var catalogo = await db.ParametrosInspeccions.AsNoTracking()
+                .Where(p => ids.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id);
+
+            return tol.GroupBy(x => x.ParametroInspeccionId)
+                .Select(g =>
+                {
+                    catalogo.TryGetValue(g.Key, out var p);
+                    // El label sale del catálogo: ParametroIngles; si viniera vacío, Parametro; último recurso, el Id
+                    string label = !string.IsNullOrWhiteSpace(p?.ParametroIngles) ? p!.ParametroIngles!.Trim()
+                                 : !string.IsNullOrWhiteSpace(p?.Parametro) ? p!.Parametro!.Trim()
+                                 : g.Key.ToString();
+                    return (Fila: new FilaCaracteristica(g.Key, label, g.Max(x => (int)x.NroValor)),
+                            Orden: p?.Orden ?? int.MaxValue);
+                })
+                .OrderBy(x => x.Orden).ThenBy(x => x.Fila.ParamId)
+                .Select(x => x.Fila)
+                .ToList();
+        }
+
         public async Task<string> CertificadoPDFSglassSentinel(string Idioma, CertificadoIf certificado, PiezaSap pieza, List<CertificadoIfdimension> DIMENSIONAL_RESULT, List<CertificadoIfapariencias> APARIENCIA_RESULT, List<InspeccionOptica> INSPECCIONES_OPTICAS, List<PiezaConcesion> OBSERVACIONES)
         {
             string UrlImageGordon = "http://4.228.184.32:8081/Userimage/";
             string fileName = "Reports/Results/" + certificado.Id.ToString() + "/" + pieza.LoteLogistico + ".pdf";
             try
             {
+
                 #region SEC-1 CABECERA CERTIFICADO INFO
                 string CERTIFICATE_NUMBER = certificado.Id.ToString();
                 string SUPPLIER = pieza.GetSuplier();
@@ -663,6 +516,10 @@ namespace AGP.Gordon.ServiceLayer
 
                 bool esRutaLocal = false;
 
+
+
+        
+
                 if (TryGetImagenes(pieza.Zfer, out var rutaSiluetaHc, out var rutaZonasHc, out var rutaDefectosHc))
                 {
                     rutaSilueta = rutaSiluetaHc;
@@ -679,6 +536,19 @@ namespace AGP.Gordon.ServiceLayer
                 #endregion
 
                 //QuestPDF.Settings.License = LicenseType.Community;
+
+                // Tolerancias y filas dimensionales (dinámicas desde BD)
+                var tolerancias = await GetTolerancias(pieza.Zfer);
+                var filasDim = await GetFilasDimensionales(pieza.Zfer);
+                int corte = (filasDim.Count + 1) / 2;                 // izquierda = mitad, redondeada hacia arriba
+                var filasIzq = filasDim.Take(corte).ToList();
+                var filasDer = filasDim.Skip(corte).ToList();
+                int colsIzq = filasIzq.Count > 0 ? filasIzq.Max(f => f.NumValores) : 1;
+                int colsDer = filasDer.Count > 0 ? filasDer.Max(f => f.NumValores) : 1;
+
+
+                var (aparIzq, aparDer) = GetFilasApariencia(APARIENCIA_RESULT);
+
 
                 // code in your main method
                 var document = QuestPDF.Fluent.Document.Create(container =>
@@ -882,14 +752,9 @@ namespace AGP.Gordon.ServiceLayer
 
                             #region SEC-3 DIMENSIONAL RESULT (formato Sentinel: 2 tablas)
 
-                            // TODO: por ahora TODAS las filas usan el mismo parámetro 533 ("Banda negra externa")
-                            // hasta tener los ParametroInspeccionId reales de cada fila.
-                            const int ID_TEMPLATE_TEMPORAL = 533;
-                            var paramTemplate = DIMENSIONAL_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == ID_TEMPLATE_TEMPORAL);
-
                             column.Item().Row(row =>
                             {
-                                // ---- TABLA IZQUIERDA (4 columnas) ----
+                                // ---- TABLA IZQUIERDA ----
                                 row.RelativeItem().Border(1).Table(table =>
                                 {
                                     QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer c) =>
@@ -898,29 +763,23 @@ namespace AGP.Gordon.ServiceLayer
                                     table.ColumnsDefinition(cols =>
                                     {
                                         cols.RelativeColumn(2);
-                                        cols.ConstantColumn(40);
-                                        cols.ConstantColumn(40);
-                                        cols.ConstantColumn(40);
-                                        cols.ConstantColumn(40);
+                                        for (int i = 0; i < colsIzq; i++) cols.ConstantColumn(AnchoColumna(colsIzq));
                                     });
 
                                     table.Header(header =>
                                     {
                                         header.Cell().Element(CellStyle).Text("CHARACTERISTICS").FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                        header.Cell().Element(CellStyle).Text("1").FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                        header.Cell().Element(CellStyle).Text("2").FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                        header.Cell().Element(CellStyle).Text("3").FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                        header.Cell().Element(CellStyle).Text("4").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        for (int i = 1; i <= colsIzq; i++)
+                                            header.Cell().Element(CellStyle).Text(i.ToString()).FontFamily(Fonts.Arial).FontSize(9).Bold();
                                     });
 
-                                    // TODO: reemplazar tolHardcode y el ID cuando existan los parámetros reales por fila
-                                    foreach (var fila in FilasIzquierda)
-                                        RenderFilaCaracteristicaDinamica(table, CellStyle, fila.Label, fila.ParamId, pieza.Zfer, DIMENSIONAL_RESULT, 4);
+                                    foreach (var fila in filasIzq)
+                                        RenderFilaCaracteristicaDinamica(table, CellStyle, fila.Label, fila.ParamId, tolerancias, DIMENSIONAL_RESULT, colsIzq);
                                 });
 
                                 row.ConstantItem(10); // separación entre tablas
 
-                                // ---- TABLA DERECHA (2 columnas) ----
+                                // ---- TABLA DERECHA ----
                                 row.RelativeItem().Border(1).Table(table =>
                                 {
                                     QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer c) =>
@@ -929,34 +788,33 @@ namespace AGP.Gordon.ServiceLayer
                                     table.ColumnsDefinition(cols =>
                                     {
                                         cols.RelativeColumn(3);
-                                        cols.ConstantColumn(55);
-                                        cols.ConstantColumn(55);
+                                        for (int i = 0; i < colsDer; i++) cols.ConstantColumn(AnchoColumna(colsDer));
                                     });
 
                                     table.Header(header =>
                                     {
                                         header.Cell().Element(CellStyle).Text("CHARACTERISTICS").FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                        header.Cell().Element(CellStyle).Text("1").FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                        header.Cell().Element(CellStyle).Text("2").FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                        for (int i = 1; i <= colsDer; i++)
+                                            header.Cell().Element(CellStyle).Text(i.ToString()).FontFamily(Fonts.Arial).FontSize(9).Bold();
                                     });
 
-                                    foreach (var fila in FilasDerecha)
-                                        RenderFilaCaracteristicaDinamica(table, CellStyle, fila.Label, fila.ParamId, pieza.Zfer, DIMENSIONAL_RESULT, 2);
+                                    foreach (var fila in filasDer)
+                                        RenderFilaCaracteristicaDinamica(table, CellStyle, fila.Label, fila.ParamId, tolerancias, DIMENSIONAL_RESULT, colsDer);
                                 });
                             });
+
+                        
 
                             #endregion
 
                             column.Item().PaddingTop(2).Text("");
-                            column.Spacing(15);
+                            column.Spacing(10);
                             column.Item().PaddingTop(0).AlignCenter().Text("Appearance Results");
                             column.Spacing(5);
 
 
 
                             #region SEC-4 APARIENCIA RESULT
-
-                            var (colIzquierda, colDerecha) = GetLayoutApariencia(pieza.Zfer);
 
                             column.Item().AlignCenter().Row(row =>
                             {
@@ -978,16 +836,15 @@ namespace AGP.Gordon.ServiceLayer
                                         columns.ConstantColumn(40);
                                     });
 
-                                    int filas = Math.Max(colIzquierda.Length, colDerecha.Length);
+                                    int filas = Math.Max(aparIzq.Count, aparDer.Count);
 
                                     for (int i = 0; i < filas; i++)
                                     {
-                                        if (i < colIzquierda.Length)
+                                        if (i < aparIzq.Count)
                                         {
-                                            var (label, paramId) = colIzquierda[i];
-                                            var data = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == paramId);
-                                            table.Cell().Element(CellStyle).Text(label).FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                            RenderAparienciaCheckboxPorValor(table, data?.Valor);
+                                            var f = aparIzq[i];
+                                            table.Cell().Element(CellStyle).Text(f.Label).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                            RenderAparienciaCheckboxPorValor(table, f.Valor);
                                         }
                                         else
                                         {
@@ -995,12 +852,11 @@ namespace AGP.Gordon.ServiceLayer
                                             table.Cell().Element(CellStyle).Text("");
                                         }
 
-                                        if (i < colDerecha.Length)
+                                        if (i < aparDer.Count)
                                         {
-                                            var (label, paramId) = colDerecha[i];
-                                            var data = APARIENCIA_RESULT.FirstOrDefault(x => x.ParametroInspeccionId == paramId);
-                                            table.Cell().Element(CellStyle).Text(label).FontFamily(Fonts.Arial).FontSize(9).Bold();
-                                            RenderAparienciaCheckboxPorValor(table, data?.Valor);
+                                            var f = aparDer[i];
+                                            table.Cell().Element(CellStyle).Text(f.Label).FontFamily(Fonts.Arial).FontSize(9).Bold();
+                                            RenderAparienciaCheckboxPorValor(table, f.Valor);
                                         }
                                         else
                                         {
@@ -1017,101 +873,70 @@ namespace AGP.Gordon.ServiceLayer
 
                             if (OBSERVACIONES.Count > 0)
                             {
-                                column.Item().PageBreak(); // fuerza que esta sección siempre inicie en página nueva
+                                column.Item().PageBreak(); // siempre en página nueva
 
-                                column.Item().Border(0).Width(538).AlignMiddle().Height(300).AlignMiddle().Row(row =>
+                                const float anchoTabla = 200f;
+                                const float separacion = 10f;
+                                float anchoImagen = 538f - anchoTabla - separacion;          // 328
+                                byte[]? bytesDefectos = CargarBytesImagen(rutaDefectos, esRutaLocal);
+                                float altoImagen = CalcularAltoImagen(bytesDefectos, anchoImagen);
+
+                                column.Item().Row(row =>
                                 {
-                                    /*
-                                    if (pieza.DefectoImagen != null && pieza.DefectoImagen != "")
-                                        row.ConstantItem(269).Border(0).AlignCenter().Width(220).Background(Colors.White).Height(300).AlignMiddle()
-                                        .Image(HelpImage.GetFileContent(pieza.DefectoImagen));
+                                    // ---- Silueta con marcadores ----
+                                    var celdaImagen = row.ConstantItem(anchoImagen).Height(altoImagen);
+                                    if (bytesDefectos != null)
+                                        celdaImagen.Element(c => RenderSiluetaConDefectos(c, bytesDefectos, OBSERVACIONES));
                                     else
-                                        row.ConstantItem(269).Border(0).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                        .Text("");*/
+                                        celdaImagen.Text("");
 
-                                    if (!string.IsNullOrEmpty(rutaDefectos))
-                                        row.ConstantItem(269).Border(0).Width(220).Height(300)
-                                            .Element(c => RenderSiluetaConDefectos(c, rutaDefectos, esRutaLocal, OBSERVACIONES));
-                                    else
-                                        row.ConstantItem(269).Border(0).Width(220).Height(300)
-                                            .AlignCenter().AlignMiddle().Text("");
+                                    row.ConstantItem(separacion);
 
-                                    row.ConstantItem(260).Height(300).AlignMiddle().Border(1).Table(table =>
+                                    // ---- Tabla de defectos ----
+                                    row.ConstantItem(anchoTabla).AlignMiddle().Border(1).Table(table =>
                                     {
-                                        QuestPDF.Infrastructure.IContainer DefaultCellStyle(QuestPDF.Infrastructure.IContainer container, string backgroundColor)
-                                        {
-                                            return container
-                                                //.Height(5)
-                                                .Border(1)
-                                                .BorderColor(Colors.Grey.Lighten1)
-                                                .Background(backgroundColor)
-                                                .PaddingVertical(1)
-                                                .PaddingHorizontal(1)
-                                                .AlignCenter()
-                                                .AlignMiddle();
-                                        }
+                                        QuestPDF.Infrastructure.IContainer DefaultCellStyle(QuestPDF.Infrastructure.IContainer container, string backgroundColor) =>
+                                            container.Border(1).BorderColor(Colors.Grey.Lighten1).Background(backgroundColor)
+                                                     .PaddingVertical(1).PaddingHorizontal(1).AlignCenter().AlignMiddle();
+
+                                        QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer c) => DefaultCellStyle(c, Colors.Grey.Lighten3);
+                                        QuestPDF.Infrastructure.IContainer DataCellStyle(QuestPDF.Infrastructure.IContainer c) => DefaultCellStyle(c, Colors.White);
 
                                         table.ColumnsDefinition(columns =>
                                         {
-                                            columns.ConstantColumn(30);
-                                            columns.ConstantColumn(30);
-                                            columns.ConstantColumn(120);
-                                            columns.ConstantColumn(80);
-
+                                            columns.ConstantColumn(25);   // ITEM
+                                            columns.ConstantColumn(30);   // ZONE
+                                            columns.RelativeColumn();     // DEFECT (toma el resto ≈ 95)
+                                            columns.ConstantColumn(50);   // SIZE
                                         });
 
                                         table.Header(header =>
                                         {
-                                            // please be sure to call the 'header' handler!
                                             header.Cell().Element(CellStyle).Text("ITEM").FontFamily(Fonts.Arial).FontSize(8).Bold();
                                             header.Cell().Element(CellStyle).Text("ZONE").FontFamily(Fonts.Arial).FontSize(8).Bold();
                                             header.Cell().Element(CellStyle).Text("DEFECT").FontFamily(Fonts.Arial).FontSize(8).Bold();
                                             header.Cell().Element(CellStyle).Text("SIZE").FontFamily(Fonts.Arial).FontSize(8).Bold();
-
-                                            // you can extend existing styles by creating additional methods
                                         });
 
                                         int index = 0;
-                                        int maxRows = 10;
-                                        foreach (PiezaConcesion obs in OBSERVACIONES.Take(maxRows))
+                                        foreach (PiezaConcesion obs in OBSERVACIONES.Take(10))
                                         {
                                             index++;
-
-                                            // ITEM
-                                            table.Cell().Element(DataCellStyle).Text(index.ToString())
-                                                .FontFamily(Fonts.Arial).FontSize(7);
-
-                                            // ZONE  
-                                            table.Cell().Element(DataCellStyle).Text(obs.Zona ?? "")
-                                                .FontFamily(Fonts.Arial).FontSize(7);
-
-                                            // DEFECT - Con manejo de texto largo
-                                            table.Cell().Element(DataCellStyle).Text(obs.DefectoMaestro?.NombreIngles ?? "")
-                                                .FontFamily(Fonts.Arial).FontSize(7).LineHeight(0.9f);
-
-                                            // SIZE
-                                            table.Cell().Element(DataCellStyle).Text(obs.Tamanio ?? null)
-                                                .FontFamily(Fonts.Arial).FontSize(7);
+                                            table.Cell().Element(DataCellStyle).Text(index.ToString()).FontFamily(Fonts.Arial).FontSize(7);
+                                            table.Cell().Element(DataCellStyle).Text(obs.Zona ?? "").FontFamily(Fonts.Arial).FontSize(7);
+                                            table.Cell().Element(DataCellStyle).Text(obs.DefectoMaestro?.NombreIngles ?? "").FontFamily(Fonts.Arial).FontSize(7).LineHeight(0.9f);
+                                            table.Cell().Element(DataCellStyle).Text(obs.Tamanio ?? null).FontFamily(Fonts.Arial).FontSize(7);
                                         }
-
-                                        // Estilos de celda
-                                        QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer container) =>
-                                            DefaultCellStyle(container, Colors.Grey.Lighten3);
-
-                                        QuestPDF.Infrastructure.IContainer DataCellStyle(QuestPDF.Infrastructure.IContainer container) =>
-                                            DefaultCellStyle(container, Colors.White);
-
-                                        //QuestPDF.Infrastructure.IContainer CellStyle(QuestPDF.Infrastructure.IContainer container) => DefaultCellStyle(container, Colors.Grey.Lighten3);
                                     });
-
                                 });
 
+                                column.Spacing(25);
                             }
 
                             #endregion
 
 
-                            column.Spacing(10);
+                           
 
                             #region SEC-5 OPTICAL INSPECTION
 

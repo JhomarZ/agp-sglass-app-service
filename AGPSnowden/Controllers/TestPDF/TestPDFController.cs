@@ -122,29 +122,6 @@ namespace AGPSnowden.Controllers.TestPDF
                 }
 
 
-                /*
-                foreach (InspeccionOptica ins in INSPECCIONES_OPTICAS)
-                {
-
-                    ins.UrlImage = UrlImageGordon + PIEZA.IdCompania + "/Certificado/EvaluacionOpticaSAP/" + ins.CertificadoId + "_" + ins.ParametroInspeccionId + ".jpg";//ins.ImageByte=
-                    byte[] img = await _HelpImage.ConvertImageUrlToByte(ins.UrlImage);
-                    if(img!=null)    
-                    ins.ImageByte = _HelpImage.ResizeImage(img, 400, 400);
-
-                }
-                if (DEFECTOS.Count > 0)
-                {
-                    string urlImagenDefecto = UrlImageGordon + PIEZA.IdCompania + "/PiezaObservacion/FTSAP/" + PIEZA.OrdProceso + ".jpg";//ins.ImageByte=
-                    byte[] img = await _HelpImage.ConvertImageUrlToByte(urlImagenDefecto);
-                    if (img != null)
-                    {
-                        PIEZA.DefectoImagenByte = _HelpImage.ResizeImage(img, 300, 300);
-                    }
-                }
-                */
-
-               
-
                 // Enviar el archivo al cliente
                 //return File(fileBytes, "application/pdf", "archivo.pdf");
                 if(Idioma=="I")

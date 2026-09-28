@@ -58,6 +58,9 @@ public partial class SapexpansionContext : DbContext
 
     public virtual DbSet<ViewParametrosInspeccion> ViewParametrosInspeccions { get; set; }
 
+    public virtual DbSet<ParametroInspeccionTolerancia> ParametroInspeccionTolerancias { get; set; }
+
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("Server=sqlgordon.database.windows.net;Database=SQLGORDON1;user id=GordonSADMIN;password=#SglassMudaGORDON25;persist security info=True;MultipleActiveResultSets=True;TrustServerCertificate=True;");
@@ -1042,6 +1045,19 @@ public partial class SapexpansionContext : DbContext
             entity.Property(e => e.Val9)
                 .HasMaxLength(10)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<ParametroInspeccionTolerancia>(e =>
+        {
+            e.ToTable("ParametroInspeccionTolerancia");   // evita que EF pluralice el nombre
+            e.Property(x => x.Zfer).HasMaxLength(20).IsUnicode(false);
+            e.Property(x => x.Formula).HasMaxLength(50);
+            e.Property(x => x.TipoTolerancia).HasMaxLength(10).IsUnicode(false);
+            e.Property(x => x.Nominal).HasPrecision(12, 4);
+            e.Property(x => x.TolMas).HasPrecision(12, 4);
+            e.Property(x => x.TolMenos).HasPrecision(12, 4);
+            e.Property(x => x.Minimo).HasPrecision(12, 4);
+            e.Property(x => x.Maximo).HasPrecision(12, 4);
         });
 
         OnModelCreatingPartial(modelBuilder);
