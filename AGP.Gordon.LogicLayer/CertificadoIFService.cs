@@ -1311,21 +1311,10 @@ namespace AGP.Gordon.ServiceLayer
                             
                             column.Item().Border(0).Width(538).Height(150).Row(row =>
                             {
-                                
-                                if (pieza.ImagenFt != null && pieza.ImagenFt!="")
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                   .Image(HelpImage.GetFileContent(pieza.ImagenFt));
-                                else
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                   .Text("");
-                                
-                                if (pieza.IMAGEN_PLANO_STANDAR != null && pieza.IMAGEN_PLANO_STANDAR != "")
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                    .Image(HelpImage.GetFileContent(pieza.IMAGEN_PLANO_STANDAR));
-                                else
-                                    row.ConstantItem(269).Border(1).AlignCenter().Width(220).Background(Colors.White).AlignMiddle()
-                                    .Text("");
-                                
+
+                                CeldaImagen(row, pieza.ImagenFt);
+                                CeldaImagen(row, pieza.IMAGEN_PLANO_STANDAR);
+
                             });
                             
 
@@ -2019,10 +2008,9 @@ namespace AGP.Gordon.ServiceLayer
                                     .Text("");
 
                             });
-
+                        
 
                             #endregion
-                            // column.Item().Width(100).Height(200).Image(STREAM_IMAGEN_TECNICA);
                             column.Spacing(5);
                             column.Item().AlignCenter().Text("Dimensional");
                             column.Spacing(5);
@@ -4593,6 +4581,20 @@ namespace AGP.Gordon.ServiceLayer
             return result;
         }
 
+        private static void CeldaImagen(RowDescriptor row, string? ruta)
+        {
+            var celda = row.ConstantItem(269)
+                .Border(1)
+                .Background(Colors.White)
+                .Padding(5)            // margen interno para que no toque el borde
+                .AlignCenter()
+                .AlignMiddle();
+
+            if (!string.IsNullOrWhiteSpace(ruta))
+                celda.Image(HelpImage.GetFileContent(ruta)).FitArea();
+            else
+                celda.Text("");
+        }
         public bool CargarExcelFormato12(string PlantillaMacro, string ResultadoRuta, CertificadoIf Certificado, PiezaSap Pieza, List<CertificadoIfdimension> LstDimensional, List<CertificadoIfapariencias> LstApariencia, List<PiezaConcesion> LstDefecto, List<InspeccionOptica> LstOpticos)
         {
             bool result = false;
